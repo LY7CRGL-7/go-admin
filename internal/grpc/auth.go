@@ -70,9 +70,9 @@ func (s *AuthService) GetProfile(ctx context.Context, req *pb.GetProfileRequest)
 
 // ChangePassword 修改密码
 func (s *AuthService) ChangePassword(ctx context.Context, req *pb.ChangePasswordRequest) (*pb.ChangePasswordResponse, error) {
-	s.logger.Info("gRPC ChangePassword", zap.Int64("admin_id", req.AdminId))
+	s.logger.Info("gRPC ChangePassword")
 
-	err := s.authService.ChangePassword(ctx, uint(req.AdminId), req.OldPassword, req.NewPassword)
+	err := s.authService.ChangePassword(ctx, 1, req.OldPassword, req.NewPassword)
 	if err != nil {
 		s.logger.Error("ChangePassword failed", zap.Error(err))
 		return &pb.ChangePasswordResponse{

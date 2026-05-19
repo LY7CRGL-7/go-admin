@@ -3,12 +3,17 @@ package main
 import (
 	"admin/internal/conf"
 	"admin/internal/data"
+	"admin/internal/grpc"
 	"admin/internal/pkg/logger"
-	"admin/internal/server"
+	grpcserver "admin/internal/server"
+	"admin/internal/service"
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
 
@@ -45,32 +50,52 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 初始化 Redis
-	rdb, err := data.NewRedis(&cfg.Redis)
-	if err != nil {
-		logger.Error("初始化 Redis 失败", "error", err)
-		os.Exit(1)
-	}
-
 	// 启动 gRPC 服务器
-	var grpcServer *server.GRPCServer
 	if cfg.GRPC.Enabled {
-		grpcLogger := logger.GetLogger()
-		grpcServer, err = server.NewGRPCServer(cfg, grpcLogger)
+		grpcLogger, _ := zap.NewProduction()
+		defer grpcLogger.Sync()
+
+		grpcServer, err := grpcserver.NewGRPCServer(cfg, grpcLogger)
 		if err != nil {
 			logger.Error("初始化 gRPC 服务器失败", "error", err)
 			os.Exit(1)
 		}
 
-		// TODO: 注册 gRPC 服务（需要先实现 service 层）
-		// authService := grpcservice.NewAuthService(authService, grpcLogger)
-		// grpcServer.RegisterServices(
-		// 	authService,
-		// 	nil, // adminService
-		// 	nil, // roleService
-		// 	nil, // permissionService
-		// 	nil, // auditLogService
-		// )
+		// 创建 Service 层
+		adminRepo := data.NewAdminRepo(db)
+		roleRepo := data.NewRoleRepo(db)
+		permissionRepo := data.NewPermissionRepo(db)
+		auditLogRepo := data.NewAuditLogRepo(db)
+
+		authService := grpc.NewAuthService(
+			service.NewAuthService(adminRepo, cfg),
+			grpcLogger,
+		)
+		adminService := grpc.NewAdminService(
+			service.NewAdminService(adminRepo, roleRepo),
+			grpcLogger,
+		)
+		roleService := grpc.NewRoleService(
+			service.NewRoleService(roleRepo, permissionRepo),
+			grpcLogger,
+		)
+		permissionService := grpc.NewPermissionService(
+			service.NewPermissionService(permissionRepo),
+			grpcLogger,
+		)
+		auditLogService := grpc.NewAuditLogService(
+			service.NewAuditLogService(auditLogRepo),
+			grpcLogger,
+		)
+
+		// 注册 gRPC 服务
+		grpcServer.RegisterServices(
+			authService,
+			adminService,
+			roleService,
+			permissionService,
+			auditLogService,
+		)
 
 		// 在后台启动 gRPC 服务器
 		go func() {
@@ -79,13 +104,17 @@ func main() {
 			}
 		}()
 
-		logger.Info("gRPC 服务器启动中", "port", cfg.GRPC.Port)
-	}
-
-	// 启动 HTTP 服务器
-	logger.Info("HTTP 服务器启动中", "port", cfg.Server.Port)
-	if err := server.StartServer(cfg, db, rdb); err != nil {
-		logger.Error("启动 HTTP 服务器失败", "error", err)
+		logger.Info("gRPC 服务器已启动", "port", cfg.GRPC.Port)
+	} else {
+		logger.Warn("gRPC 服务器未启用")
 		os.Exit(1)
 	}
+
+	// 等待中断信号
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logger.Info("正在关闭服务器...")
+	logger.Info("服务器已退出")
 }

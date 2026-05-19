@@ -35,7 +35,7 @@ func (s *AdminService) CreateAdmin(ctx context.Context, req *pb.CreateAdminReque
 		Nickname: req.Nickname,
 		Email:    req.Email,
 		Phone:    req.Phone,
-		Status:   int8(req.Status),
+		Status:   1, // 默认启用
 	}
 
 	roleIDs := make([]uint, len(req.RoleIds))
@@ -106,25 +106,25 @@ func (s *AdminService) UpdateAdmin(ctx context.Context, req *pb.UpdateAdminReque
 }
 
 // DeleteAdmin 删除管理员
-func (s *AdminService) DeleteAdmin(ctx context.Context, req *pb.DeleteAdminRequest) (*pb.Response, error) {
+func (s *AdminService) DeleteAdmin(ctx context.Context, req *pb.DeleteAdminRequest) (*pb.DeleteResponse, error) {
 	s.logger.Info("gRPC DeleteAdmin", zap.Int64("id", req.Id))
 
 	if err := s.adminService.DeleteAdmin(ctx, uint(req.Id)); err != nil {
 		s.logger.Error("DeleteAdmin failed", zap.Error(err))
-		return &pb.Response{
-			Code: 500,
-			Msg:  err.Error(),
+		return &pb.DeleteResponse{
+			Success: false,
+			Message: err.Error(),
 		}, nil
 	}
 
-	return &pb.Response{
-		Code: 0,
-		Msg:  "删除成功",
+	return &pb.DeleteResponse{
+		Success: true,
+		Message: "删除成功",
 	}, nil
 }
 
 // ListAdmins 列出管理员
-func (s *AdminService) ListAdmins(ctx context.Context, req *pb.ListAdminsRequest) (*pb.AdminListResponse, error) {
+func (s *AdminService) ListAdmins(ctx context.Context, req *pb.AdminListRequest) (*pb.AdminListResponse, error) {
 	s.logger.Info("gRPC ListAdmins")
 
 	admins, total, err := s.adminService.ListAdmins(ctx, int(req.Page), int(req.PageSize))

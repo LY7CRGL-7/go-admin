@@ -74,9 +74,7 @@ func (s *RoleService) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest)
 	role := &model.Role{
 		ID:          uint(req.Id),
 		Name:        req.Name,
-		Code:        req.Code,
 		Description: req.Description,
-		Status:      int8(req.Status),
 	}
 
 	if err := s.roleService.UpdateRole(ctx, role); err != nil {
@@ -93,20 +91,20 @@ func (s *RoleService) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest)
 }
 
 // DeleteRole 删除角色
-func (s *RoleService) DeleteRole(ctx context.Context, req *pb.DeleteRoleRequest) (*pb.Response, error) {
+func (s *RoleService) DeleteRole(ctx context.Context, req *pb.DeleteRoleRequest) (*pb.DeleteResponse, error) {
 	s.logger.Info("gRPC DeleteRole", zap.Int64("id", req.Id))
 
 	if err := s.roleService.DeleteRole(ctx, uint(req.Id)); err != nil {
 		s.logger.Error("DeleteRole failed", zap.Error(err))
-		return &pb.Response{
-			Code: 500,
-			Msg:  err.Error(),
+		return &pb.DeleteResponse{
+			Success: false,
+			Message: err.Error(),
 		}, nil
 	}
 
-	return &pb.Response{
-		Code: 0,
-		Msg:  "删除成功",
+	return &pb.DeleteResponse{
+		Success: true,
+		Message: "删除成功",
 	}, nil
 }
 
