@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package admin.v1;
 
-option go_package = "github.com/LY7CRGL-7/go-admin/proto/admin/v1;adminv1";
+option go_package = "admin/proto/admin/v1;adminv1";
 
 // 认证服务
 message LoginRequest {
