@@ -4,6 +4,7 @@ import "time"
 
 type Config struct {
 	Server     ServerConfig     `yaml:"server"`
+	GRPC       GRPCConfig       `yaml:"grpc"`
 	Log        LogConfig        `yaml:"log"`
 	JWT        JWTConfig        `yaml:"jwt"`
 	AdminAuth  AdminAuthConfig  `yaml:"admin_auth"`
@@ -22,6 +23,11 @@ type ServerConfig struct {
 	Mode         string        `yaml:"mode"`
 	ReadTimeout  time.Duration `yaml:"read_timeout"`
 	WriteTimeout time.Duration `yaml:"write_timeout"`
+}
+
+type GRPCConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	Port    int    `yaml:"port"`
 }
 
 type LogConfig struct {

@@ -1,6 +1,9 @@
 # 二进制文件
 bin/
 *.exe
+*.dll
+*.so
+*.dylib
 
 # Go 相关
 vendor/
@@ -8,13 +11,16 @@ vendor/
 *.out
 
 # Proto 生成文件
-proto/**/*.pb.go
+**/*.pb.go
+**/*.pb.gw.go
 
 # Wire 生成文件
-cmd/admin/wire_gen.go
+**/wire_gen.go
 
 # 配置文件（包含敏感信息）
-config.local.yaml
+*.local.yaml
+*.local.json
+config.local.*
 
 # 日志文件
 logs/
@@ -25,11 +31,40 @@ logs/
 .vscode/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # 环境变量
 .env
 .env.local
+.env.production
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 证书和密钥
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Docker
+.docker/
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+
+# 系统文件
+.Spotlight-V100
+.Trashes

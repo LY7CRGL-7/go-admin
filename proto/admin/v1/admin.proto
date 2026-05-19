@@ -140,3 +140,100 @@ message Response {
   string msg = 2;
   bytes data = 3;
 }
+
+// ==================== gRPC 服务定义 ====================
+
+// 认证服务
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc GetProfile(GetProfileRequest) returns (AdminInfo);
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+}
+
+message GetProfileRequest {
+  int64 admin_id = 1;
+}
+
+message LogoutRequest {
+  int64 admin_id = 1;
+}
+
+message LogoutResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// 管理员服务
+service AdminService {
+  rpc CreateAdmin(CreateAdminRequest) returns (AdminInfo);
+  rpc GetAdmin(GetAdminRequest) returns (AdminInfo);
+  rpc UpdateAdmin(UpdateAdminRequest) returns (AdminInfo);
+  rpc DeleteAdmin(DeleteAdminRequest) returns (DeleteResponse);
+  rpc ListAdmins(AdminListRequest) returns (AdminListResponse);
+}
+
+message GetAdminRequest {
+  int64 id = 1;
+}
+
+message DeleteAdminRequest {
+  int64 id = 1;
+}
+
+message DeleteResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// 角色服务
+service RoleService {
+  rpc CreateRole(CreateRoleRequest) returns (RoleInfo);
+  rpc GetRole(GetRoleRequest) returns (RoleInfo);
+  rpc UpdateRole(UpdateRoleRequest) returns (RoleInfo);
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteResponse);
+  rpc ListRoles(ListRolesRequest) returns (RoleListResponse);
+  rpc AssignPermissions(AssignPermissionsRequest) returns (AssignPermissionsResponse);
+}
+
+message GetRoleRequest {
+  int64 id = 1;
+}
+
+message DeleteRoleRequest {
+  int64 id = 1;
+}
+
+message ListRolesRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message AssignPermissionsRequest {
+  int64 role_id = 1;
+  repeated int64 permission_ids = 2;
+}
+
+message AssignPermissionsResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// 权限服务
+service PermissionService {
+  rpc ListPermissions(ListPermissionsRequest) returns (PermissionListResponse);
+}
+
+message ListPermissionsRequest {
+  // 可选过滤条件
+}
+
+// 审计日志服务
+service AuditLogService {
+  rpc ListAuditLogs(AuditLogListRequest) returns (AuditLogListResponse);
+  rpc GetAuditLog(GetAuditLogRequest) returns (AuditLogInfo);
+}
+
+message GetAuditLogRequest {
+  int64 id = 1;
+}

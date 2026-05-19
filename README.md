@@ -20,6 +20,7 @@
 ### 微服务架构
 - ✅ **Wire 依赖注入** - Google 官方依赖注入框架
 - ✅ **Protocol Buffers** - 语言无关的接口定义
+- ✅ **gRPC 服务** - 高性能 RPC 框架
 - ✅ **Kafka 消息队列** - 异步处理能力（审计日志等）
 - ✅ **MinIO 对象存储** - 文件存储支持
 - ✅ **Prometheus 监控** - 完整的可观测性
@@ -43,6 +44,7 @@
 ### 核心框架
 - **Go 1.23+** - 编程语言
 - **Gin** - HTTP Web 框架
+- **gRPC** - RPC 框架
 - **Wire** - 依赖注入框架 (github.com/google/wire)
 - **Protocol Buffers** - 接口定义语言
 
@@ -83,6 +85,8 @@ admin/
 │   │   └── redis.go            # Redis 连接
 │   ├── dto/                     # 数据传输对象
 │   │   └── dto.go
+│   ├── grpc/                    # gRPC 服务实现
+│   │   └── auth.go             # 认证服务
 │   ├── handler/                 # HTTP 处理器
 │   │   ├── auth.go             # 认证相关
 │   │   ├── admin.go            # 管理员管理
@@ -250,13 +254,69 @@ git init
 
 ## 📡 API 文档
 
-### 基础信息
+### HTTP API
+
+#### 基础信息
 
 - 基础路径: `/api/v1`
 - 认证方式: Bearer Token
 - 数据格式: JSON
 
-### 认证接口
+### gRPC 服务
+
+项目提供完整的 gRPC 服务支持，端口：9090
+
+#### 服务列表
+
+1. **AuthService** - 认证服务
+   - `Login` - 登录
+   - `GetProfile` - 获取个人信息
+   - `ChangePassword` - 修改密码
+   - `Logout` - 登出
+
+2. **AdminService** - 管理员服务
+   - `CreateAdmin` - 创建管理员
+   - `GetAdmin` - 获取管理员
+   - `UpdateAdmin` - 更新管理员
+   - `DeleteAdmin` - 删除管理员
+   - `ListAdmins` - 列表查询
+
+3. **RoleService** - 角色服务
+   - `CreateRole` - 创建角色
+   - `GetRole` - 获取角色
+   - `UpdateRole` - 更新角色
+   - `DeleteRole` - 删除角色
+   - `ListRoles` - 列表查询
+   - `AssignPermissions` - 分配权限
+
+4. **PermissionService** - 权限服务
+   - `ListPermissions` - 列表查询
+
+5. **AuditLogService** - 审计日志服务
+   - `ListAuditLogs` - 列表查询
+   - `GetAuditLog` - 获取详情
+
+#### 使用示例
+
+```go
+// 连接 gRPC 服务
+conn, err := grpc.Dial("localhost:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
+if err != nil {
+    log.Fatal(err)
+}
+defer conn.Close()
+
+// 创建认证客户端
+authClient := pb.NewAuthServiceClient(conn)
+
+// 调用登录接口
+resp, err := authClient.Login(context.Background(), &pb.LoginRequest{
+    Username: "admin",
+    Password: "Admin@123456",
+})
+```
+
+### HTTP API 详细文档
 
 #### 1. 管理员登录
 

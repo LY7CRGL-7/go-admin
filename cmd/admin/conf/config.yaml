@@ -4,6 +4,11 @@ server:
   read_timeout: 10s
   write_timeout: 10s
 
+# gRPC 服务配置
+grpc:
+  enabled: true
+  port: 9090
+
 log:
   level: info  # debug, info, warn, error
   file_path: /opt/apps/admin/logs/admin.log
