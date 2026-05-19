@@ -3,14 +3,12 @@ package main
 import (
 	"admin/internal/conf"
 	"admin/internal/data"
-	grpcservice "admin/internal/grpc"
 	"admin/internal/pkg/logger"
 	"admin/internal/server"
 	"flag"
 	"fmt"
 	"os"
 
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
 
@@ -21,23 +19,24 @@ func main() {
 
 	// 读取配置文件
 	cfg := &conf.Config{}
-	data, err := os.ReadFile(configPath)
+	configData, err := os.ReadFile(configPath)
 	if err != nil {
 		fmt.Printf("读取配置文件失败: %v\n", err)
 		os.Exit(1)
 	}
 
-	if err := yaml.Unmarshal(data, cfg); err != nil {
+	if err := yaml.Unmarshal(configData, cfg); err != nil {
 		fmt.Printf("解析配置文件失败: %v\n", err)
 		os.Exit(1)
 	}
 
 	// 初始化日志
-	logger, err := logger.NewLogger(&cfg.Logger)
-	if err != nil {
+	if err := logger.Init(cfg.Log.FilePath, cfg.Log.Level, cfg.Log.MaxSize, cfg.Log.MaxBackups, cfg.Log.MaxAge); err != nil {
 		fmt.Printf("初始化日志失败: %v\n", err)
 		os.Exit(1)
 	}
+
+	logger.Info("启动管理端服务", "version", "1.0.0")
 
 	// 初始化数据库
 	db, err := data.NewDatabase(&cfg.Database)
@@ -56,22 +55,22 @@ func main() {
 	// 启动 gRPC 服务器
 	var grpcServer *server.GRPCServer
 	if cfg.GRPC.Enabled {
-		grpcLogger, _ := zap.NewProduction()
+		grpcLogger := logger.GetLogger()
 		grpcServer, err = server.NewGRPCServer(cfg, grpcLogger)
 		if err != nil {
 			logger.Error("初始化 gRPC 服务器失败", "error", err)
 			os.Exit(1)
 		}
 
-		// 注册 gRPC 服务
-		authGRPCService := grpcservice.NewAuthService(nil, grpcLogger)
-		grpcServer.RegisterServices(
-			authGRPCService,
-			nil, // adminService
-			nil, // roleService
-			nil, // permissionService
-			nil, // auditLogService
-		)
+		// TODO: 注册 gRPC 服务（需要先实现 service 层）
+		// authService := grpcservice.NewAuthService(authService, grpcLogger)
+		// grpcServer.RegisterServices(
+		// 	authService,
+		// 	nil, // adminService
+		// 	nil, // roleService
+		// 	nil, // permissionService
+		// 	nil, // auditLogService
+		// )
 
 		// 在后台启动 gRPC 服务器
 		go func() {

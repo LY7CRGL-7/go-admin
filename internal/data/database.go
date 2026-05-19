@@ -7,13 +7,13 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	_ "gorm.io/gorm/logger"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 // NewDatabase 创建数据库连接
 func NewDatabase(cfg *conf.DatabaseConfig) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
 	})
 	if err != nil {
 		return nil, err

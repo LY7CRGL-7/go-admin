@@ -37,6 +37,7 @@ deps:
 proto:
 	@echo "Generating proto code..."
 	protoc --go_out=. --go_opt=paths=source_relative \
+		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
 		proto/admin/v1/admin.proto
 	@echo "Proto generation completed!"
 
