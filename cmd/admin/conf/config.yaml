@@ -1,0 +1,110 @@
+server:
+  port: 8080
+  mode: release  # debug, release, test
+  read_timeout: 10s
+  write_timeout: 10s
+
+log:
+  level: info  # debug, info, warn, error
+  file_path: /opt/apps/admin/logs/admin.log
+  max_size: 100    # MB
+  max_backups: 10
+  max_age: 30      # days
+
+jwt:
+  secret: your-256-bit-secret-key-change-in-production
+  expire: 24h
+  issuer: admin-system
+
+# 管理员认证配置
+admin_auth:
+  # 初始管理员账号（首次启动时创建）
+  init_admin:
+    username: admin
+    password: Admin@123456  # 请修改为强密码
+    nickname: 系统管理员
+
+# 数据库配置
+database:
+  driver: postgres
+  dsn: host=localhost port=5432 user=admin password=admin123 dbname=admin_db sslmode=disable timezone=Asia/Shanghai
+  max_open_conns: 100
+  max_idle_conns: 10
+  conn_max_lifetime: 3600s
+
+# Redis 配置
+redis:
+  addr: localhost:6379
+  password: ""
+  db: 0
+  pool_size: 20
+  min_idle_conns: 5
+
+# 安全配置
+security:
+  # 密码策略
+  password:
+    min_length: 8
+    require_uppercase: true
+    require_lowercase: true
+    require_number: true
+    require_special: true
+    special_chars: "!@#$%^&*()_+-=[]{}|;:',.<>?"
+  
+  # 登录限制
+  login:
+    max_attempts: 5
+    lockout_duration: 30m  # 锁定时间
+    attempt_window: 15m    # 尝试时间窗口
+  
+  # IP 白名单（留空表示不限制）
+  ip_whitelist: []
+  
+  # CORS 配置
+  cors:
+    allow_origins:
+      - http://localhost:3000
+    allow_methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allow_credentials: true
+    max_age: 86400
+
+# 限流配置
+rate_limit:
+  enabled: true
+  global_qps: 1000
+  per_user_qps: 50
+  per_ip_qps: 100
+
+# 审计日志配置
+audit:
+  enabled: true
+  log_file: /opt/apps/admin/logs/audit.log
+  max_size: 200    # MB
+  max_backups: 30
+  max_age: 180     # days
+
+# Kafka 配置
+kafka:
+  enabled: false
+  brokers:
+    - localhost:9092
+  audit_log_topic: audit-logs
+
+# MinIO 对象存储配置
+minio:
+  enabled: false
+  endpoint: localhost:9000
+  access_key_id: minioadmin
+  secret_access_key: minioadmin
+  use_ssl: false
+  bucket_name: admin-files
+
+# Prometheus 监控配置
+prometheus:
+  enabled: true
+  metrics_path: /metrics

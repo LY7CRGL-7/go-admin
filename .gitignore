@@ -1,0 +1,35 @@
+# 二进制文件
+bin/
+*.exe
+
+# Go 相关
+vendor/
+*.test
+*.out
+
+# Proto 生成文件
+proto/**/*.pb.go
+
+# Wire 生成文件
+cmd/admin/wire_gen.go
+
+# 配置文件（包含敏感信息）
+config.local.yaml
+
+# 日志文件
+logs/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 环境变量
+.env
+.env.local
