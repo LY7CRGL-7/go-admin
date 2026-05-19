@@ -1,20 +1,12 @@
-# 安全管理端后端系统
+# 🚀 企业级 Go 安全管理端后端系统
 
-一个基于 Go 和 Gin 框架构建的企业级安全管理端后端系统，具备完善的安全机制、权限控制和审计功能。
+一个基于 Go 和 Gin 框架构建的企业级安全管理端后端系统模板，具备完善的安全机制、权限控制、审计功能和微服务架构支持。
 
-## 📋 目录
+> 📌 **提示**：这是一个可复用的项目模板，你可以基于此快速构建自己的微服务项目。
 
-- [核心特性](#核心特性)
-- [安全特性](#安全特性)
-- [技术栈](#技术栈)
-- [项目结构](#项目结构)
-- [快速开始](#快速开始)
-- [API 文档](#api-文档)
-- [安全最佳实践](#安全最佳实践)
-- [部署](#部署)
+## ✨ 核心特性
 
-## 🎯 核心特性
-
+### 安全与权限
 - ✅ **JWT 认证** - 基于 Token 的无状态认证
 - ✅ **RBAC 权限控制** - 基于角色的访问控制
 - ✅ **密码安全** - bcrypt 加密 + 强密码策略
@@ -25,49 +17,33 @@
 - ✅ **CORS 支持** - 安全的跨域配置
 - ✅ **数据验证** - 严格的输入参数验证
 
-## 🔒 安全特性
+### 微服务架构
+- ✅ **Wire 依赖注入** - Google 官方依赖注入框架
+- ✅ **Protocol Buffers** - 语言无关的接口定义
+- ✅ **Kafka 消息队列** - 异步处理能力（审计日志等）
+- ✅ **MinIO 对象存储** - 文件存储支持
+- ✅ **Prometheus 监控** - 完整的可观测性
+- ✅ **Docker Compose** - 一键启动基础设施
+- ✅ **GitHub Actions** - CI/CD 自动化
 
-### 1. 认证安全
-- JWT Token 认证，支持过期时间控制
-- Bearer Token 格式验证
-- Token 签发者验证
-- 密码 bcrypt 加密存储
+## 📋 目录
 
-### 2. 授权安全
-- 基于角色的访问控制（RBAC）
-- 超级管理员特殊权限
-- 接口级权限验证
-- 细粒度权限控制
-
-### 3. 密码安全
-- 最小长度要求（默认 8 位）
-- 必须包含大写字母
-- 必须包含小写字母
-- 必须包含数字
-- 必须包含特殊字符
-- 密码强度可配置
-
-### 4. 防攻击
-- 登录失败次数限制
-- 账号锁定机制
-- IP 锁定机制
-- 滑动窗口限流
-- SQL 注入防护（GORM ORM）
-- XSS 防护
-
-### 5. 审计追踪
-- 所有操作记录审计日志
-- 记录请求和响应
-- 记录操作者信息
-- 记录 IP 和 User-Agent
-- 记录操作耗时
+- [技术栈](#技术栈)
+- [项目结构](#项目结构)
+- [快速开始](#快速开始)
+- [使用模板](#使用模板)
+- [API 文档](#api-文档)
+- [监控与可观测性](#监控与可观测性)
+- [开发工具](#开发工具)
+- [安全最佳实践](#安全最佳实践)
+- [部署](#部署)
 
 ## 🛠 技术栈
 
 ### 核心框架
 - **Go 1.23+** - 编程语言
 - **Gin** - HTTP Web 框架
-- **Wire** - 依赖注入框架
+- **Wire** - 依赖注入框架 (github.com/google/wire)
 - **Protocol Buffers** - 接口定义语言
 
 ### 数据存储
@@ -93,8 +69,10 @@
 admin/
 ├── cmd/admin/
 │   ├── conf/
-│   │   └── config.yaml          # 配置文件
-│   └── main.go                  # 主程序入口
+│   │   ├── config.yaml          # 配置文件（不提交到 Git）
+│   │   └── config.yaml.example  # 配置模板（提交到 Git）
+│   ├── main.go                  # 主程序入口
+│   └── wire.go                  # Wire 依赖注入配置
 ├── internal/
 │   ├── conf/                    # 配置结构体
 │   │   └── config.go
@@ -109,20 +87,31 @@ admin/
 │   │   ├── auth.go             # 认证相关
 │   │   ├── admin.go            # 管理员管理
 │   │   └── common.go           # 通用功能
+│   ├── kafka/                   # Kafka 封装
+│   │   └── kafka.go
 │   ├── middleware/              # 中间件
 │   │   ├── auth.go             # JWT 认证
 │   │   ├── rbac.go             # RBAC 权限
 │   │   ├── security.go         # 安全中间件
-│   │   └── audit.go            # 审计日志
+│   │   ├── audit.go            # 审计日志
+│   │   └── metrics.go          # Prometheus 监控
 │   ├── pkg/
 │   │   └── logger/             # 日志工具
 │   │       └── logger.go
 │   ├── service/                 # 业务逻辑层
 │   │   └── auth.go
-│   └── server/                  # 服务器
-│       └── http.go
+│   ├── server/                  # 服务器
+│   │   └── http.go
+│   └── storage/                 # 对象存储
+│       └── minio.go
+├── proto/admin/v1/
+│   └── admin.proto              # Protocol Buffers 定义
 ├── deploy/
-│   └── k8s.yaml                # Kubernetes 部署配置
+│   ├── k8s.yaml                # Kubernetes 部署配置
+│   └── prometheus.yml          # Prometheus 配置
+├── .github/workflows/
+│   └── ci.yml                  # GitHub Actions CI/CD
+├── docker-compose.yaml          # Docker Compose 配置
 ├── Dockerfile                   # Docker 镜像构建
 ├── Makefile                     # 构建脚本
 ├── go.mod
@@ -138,18 +127,48 @@ admin/
 - Redis 6.0+
 - Kafka 2.8+ （可选）
 - MinIO （可选）
+- Docker & Docker Compose （推荐）
 - protoc 编译器 （可选）
 
-### 1. 克隆项目
+### 方式一：使用 Docker Compose（推荐）
+
+#### 1. 启动基础设施
 
 ```bash
-cd D:\golang\code
-# 或从 IM 项目复制
-cp -r D:\golang\company\im\app\admin D:\golang\code\admin
-cd admin
+docker-compose up -d
 ```
 
-### 2. 安装依赖
+这将启动：
+- PostgreSQL (localhost:5432)
+- Redis (localhost:6379)
+- Kafka (localhost:9092)
+- Zookeeper (localhost:2181)
+- MinIO (localhost:9000, Console: localhost:9001)
+- Prometheus (localhost:9090)
+- Grafana (localhost:3000)
+
+#### 2. 安装依赖
+
+```bash
+make deps
+```
+
+#### 3. 配置项目
+
+```bash
+cp cmd/admin/conf/config.yaml.example cmd/admin/conf/config.yaml
+# 编辑配置文件，根据实际情况修改
+```
+
+#### 4. 运行项目
+
+```bash
+make run
+```
+
+### 方式二：手动配置
+
+#### 1. 安装依赖
 
 ```bash
 # 安装 Go 依赖
@@ -160,15 +179,9 @@ go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
 # 安装 Wire 依赖注入工具
 go install github.com/google/wire/cmd/wire@latest
-
-# 生成 proto 代码（可选）
-make proto
-
-# 生成 wire 代码（可选）
-make wire
 ```
 
-### 3. 配置数据库
+#### 2. 配置数据库
 
 创建 PostgreSQL 数据库：
 
@@ -176,7 +189,7 @@ make wire
 CREATE DATABASE admin_db;
 ```
 
-### 4. 修改配置
+#### 3. 修改配置
 
 编辑 `cmd/admin/conf/config.yaml`：
 
@@ -192,7 +205,7 @@ jwt:
   secret: your-256-bit-secret-key-change-in-production
 ```
 
-### 5. 运行
+#### 4. 运行
 
 ```bash
 # 开发模式
@@ -202,11 +215,38 @@ make run
 go run cmd/admin/main.go -config cmd/admin/conf/config.yaml
 ```
 
-### 6. 构建
+#### 5. 构建
 
 ```bash
 make build
 ```
+
+## 📋 使用模板
+
+如果你想基于此模板创建新项目：
+
+### 1. 克隆模板
+
+```bash
+git clone https://github.com/LY7CRGL-7/go-admin.git my-project
+cd my-project
+```
+
+### 2. 重新初始化 Git
+
+```bash
+# 删除 .git 并重新初始化
+rm -rf .git  # Linux/Mac
+rmdir /s /q .git  # Windows PowerShell
+git init
+```
+
+### 3. 自定义项目
+
+1. **修改模块名**：编辑 `go.mod` 中的模块名
+2. **更新配置**：复制并修改配置文件
+3. **实现业务逻辑**：在 `internal/` 目录下添加你的代码
+4. **更新文档**：修改此 README.md
 
 ## 📡 API 文档
 
@@ -375,6 +415,89 @@ GET /api/v1/audit-logs?page=1&page_size=20
 Authorization: Bearer {token}
 ```
 
+## 📊 监控与可观测性
+
+### Prometheus 指标
+
+系统暴露以下 Prometheus 指标：
+
+- `admin_http_requests_total` - HTTP 请求总数
+- `admin_http_request_duration_seconds` - HTTP 请求持续时间
+- `admin_active_connections` - 活跃连接数
+
+访问指标：`http://localhost:8080/metrics`
+
+### Grafana 仪表板
+
+1. 访问 Grafana：`http://localhost:3000`（用户名/密码：admin/admin）
+2. 添加 Prometheus 数据源：`http://prometheus:9090`
+3. 导入仪表板或创建自定义图表
+
+### 其他监控服务
+
+- **Prometheus**: http://localhost:9090
+- **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
+
+## 🔧 开发工具
+
+### Makefile 命令
+
+```bash
+# 安装依赖
+make deps
+
+# 运行项目
+make run
+
+# 构建项目
+make build
+
+# 构建 Docker 镜像
+make docker
+
+# 生成 Proto 代码
+make proto
+
+# 生成 Wire 依赖注入代码
+make wire
+
+# 格式化代码
+make fmt
+
+# 代码检查
+make lint
+
+# 运行测试
+make test
+
+# 清理构建
+make clean
+```
+
+### 代码生成
+
+```bash
+# 生成 Proto 代码
+make proto
+
+# 生成 Wire 依赖注入代码
+make wire
+
+# 格式化代码
+make fmt
+
+# 代码检查
+make lint
+```
+
+### 快速参考
+
+- **Proto 定义**：`proto/admin/v1/admin.proto`
+- **Wire 配置**：`cmd/admin/wire.go`
+- **Docker Compose**：`docker-compose.yaml`
+- **Prometheus 配置**：`deploy/prometheus.yml`
+- **CI/CD 配置**：`.github/workflows/ci.yml`
+
 ## 🔐 安全最佳实践
 
 ### 1. 生产环境配置
@@ -486,70 +609,24 @@ server {
 
 **⚠️ 重要：首次登录后请立即修改密码！**
 
-## 🔧 开发
+## 🔒 安全提示
 
-```bash
-# 格式化代码
-make fmt
-
-# 运行测试
-make test
-
-# 清理构建
-make clean
-```
+1. 修改所有默认密码
+2. 不要提交配置文件（使用 `.example` 模板）
+3. 使用强 JWT 密钥
+4. 启用 HTTPS
+5. 定期更新依赖
 
 ## 📄 许可证
 
-本项目为公司内部使用，未经授权不得使用。
+MIT License
 
 ## 📧 联系方式
 
-如有问题，请联系开发团队。
+如有问题，请联系开发团队或提交 Issue。
 
 ---
 
-## 📊 监控与可观测性
-
-### Prometheus 指标
-
-系统暴露以下 Prometheus 指标：
-
-- `admin_http_requests_total` - HTTP 请求总数
-- `admin_http_request_duration_seconds` - HTTP 请求持续时间
-- `admin_active_connections` - 活跃连接数
-
-访问指标：`http://localhost:8080/metrics`
-
-### Grafana 仪表板
-
-1. 访问 Grafana：`http://localhost:3000`（用户名/密码：admin/admin）
-2. 添加 Prometheus 数据源：`http://prometheus:9090`
-3. 导入仪表板或创建自定义图表
-
----
-
-## 🔧 开发工具
-
-### 代码生成
-
-```bash
-# 生成 Proto 代码
-make proto
-
-# 生成 Wire 依赖注入代码
-make wire
-
-# 格式化代码
-make fmt
-
-# 代码检查
-make lint
-```
-
-### 快速参考
-
-- **Proto 定义**：`proto/admin/v1/admin.proto`
-- **Wire 配置**：`cmd/admin/wire.go`
-- **Docker Compose**：`docker-compose.yaml`
-- **Prometheus 配置**：`deploy/prometheus.yml`
+**作者**: LY7CRGL-7  
+**版本**: v1.0.0  
+**仓库**: https://github.com/LY7CRGL-7/go-admin
