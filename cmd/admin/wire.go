@@ -4,43 +4,33 @@
 package main
 
 import (
+	"admin/internal/biz"
 	"admin/internal/conf"
 	"admin/internal/data"
-	"admin/internal/handler"
 	"admin/internal/server"
 	"admin/internal/service"
 
+	"github.com/go-kratos/kratos/v2"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 )
 
-// InitializeApp 初始化应用
-func InitializeApp(cfg *conf.Config) (*server.HTTPServer, error) {
+// wireApp Wire 注入器声明
+func wireApp(bc *conf.Bootstrap, logger log.Logger) (*kratos.App, func(), error) {
 	wire.Build(
-		// 数据层
-		data.NewDatabase,
-		data.NewRedis,
-		data.NewAdminRepo,
-		data.NewRoleRepo,
-		data.NewPermissionRepo,
-		data.NewAuditLogRepo,
+		// 从 Bootstrap 提取子配置
+		provideServerConf,
+		provideDataConf,
+		provideAuthConf,
 
-		// 服务层
-		service.NewAuthService,
-		service.NewAdminService,
-		service.NewRoleService,
-		service.NewPermissionService,
-		service.NewAuditLogService,
+		// 四层注入
+		data.ProviderSet,
+		biz.ProviderSet,
+		service.ProviderSet,
+		server.ProviderSet,
 
-		// 处理器层
-		handler.NewAuthHandler,
-		handler.NewAdminHandler,
-		handler.NewRoleHandler,
-		handler.NewPermissionHandler,
-		handler.NewAuditLogHandler,
-
-		// 服务器
-		server.NewHTTPServer,
+		// App
+		newApp,
 	)
-
-	return &server.HTTPServer{}, nil
+	return nil, nil, nil
 }

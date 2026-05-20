@@ -1,222 +1,76 @@
 package service
 
 import (
-	"admin/internal/conf"
-	"admin/internal/data"
-	"admin/internal/data/model"
-	"admin/internal/pkg/logger"
 	"context"
-	"errors"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
+	v1 "admin/api/admin/v1"
+	"admin/internal/biz"
+
+	"github.com/go-kratos/kratos/v2/log"
 )
 
+// AuthService 认证服务
 type AuthService struct {
-	adminRepo data.AdminRepository
-	cfg       *conf.Config
+	v1.UnimplementedAuthServiceServer
+	uc  *biz.UserUsecase
+	log *log.Helper
 }
 
-func NewAuthService(adminRepo data.AdminRepository, cfg *conf.Config) *AuthService {
+// NewAuthService 创建认证服务
+func NewAuthService(uc *biz.UserUsecase, logger log.Logger) *AuthService {
 	return &AuthService{
-		adminRepo: adminRepo,
-		cfg:       cfg,
+		uc:  uc,
+		log: log.NewHelper(log.With(logger, "module", "service/auth")),
 	}
 }
 
-// Login 管理员登录
-func (s *AuthService) Login(ctx context.Context, username, password, ip string) (string, *model.Admin, error) {
-	// 查询管理员
-	admin, err := s.adminRepo.GetByUsername(ctx, username)
+func (s *AuthService) Login(ctx context.Context, req *v1.LoginRequest) (*v1.LoginReply, error) {
+	token, refreshToken, user, err := s.uc.Login(ctx, req.Username, req.Password)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", nil, errors.New("用户名或密码错误")
-		}
-		logger.Error("查询管理员失败", "error", err)
-		return "", nil, errors.New("系统错误")
+		return nil, err
 	}
+	return &v1.LoginReply{
+		Token:        token,
+		RefreshToken: refreshToken,
+		User:         userToProto(user),
+	}, nil
+}
 
-	if admin.Status != 1 {
-		return "", nil, errors.New("账号已被禁用")
+func (s *AuthService) Logout(_ context.Context, _ *v1.LogoutRequest) (*v1.LogoutReply, error) {
+	return &v1.LogoutReply{Success: true}, nil
+}
+
+func (s *AuthService) GetProfile(ctx context.Context, _ *v1.GetProfileRequest) (*v1.UserInfo, error) {
+	claims := GetClaimsFromContext(ctx)
+	if claims == nil {
+		return nil, ErrUnauthorized
 	}
-
-	// 验证密码
-	if err := bcrypt.CompareHashAndPassword([]byte(admin.Password), []byte(password)); err != nil {
-		return "", nil, errors.New("用户名或密码错误")
-	}
-
-	// 生成 Token
-	token, err := s.generateToken(admin.ID, admin.Username)
+	user, err := s.uc.GetUser(ctx, claims.UserID)
 	if err != nil {
-		logger.Error("生成 Token 失败", "error", err)
-		return "", nil, errors.New("系统错误")
+		return nil, err
 	}
-
-	// 更新最后登录信息
-	if err := s.adminRepo.UpdateLastLogin(ctx, admin.ID, ip); err != nil {
-		logger.Error("更新登录信息失败", "error", err)
-	}
-
-	return token, admin, nil
+	return userToProto(user), nil
 }
 
-// generateToken 生成 JWT Token
-func (s *AuthService) generateToken(adminID uint, username string) (string, error) {
-	now := time.Now()
-	expire := now.Add(time.Duration(s.cfg.JWT.Expire) * time.Hour)
-
-	claims := jwt.MapClaims{
-		"admin_id": adminID,
-		"username": username,
-		"exp":      expire.Unix(),
-		"iat":      now.Unix(),
+func (s *AuthService) ChangePassword(ctx context.Context, req *v1.ChangePasswordRequest) (*v1.ChangePasswordReply, error) {
+	claims := GetClaimsFromContext(ctx)
+	if claims == nil {
+		return nil, ErrUnauthorized
 	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(s.cfg.JWT.Secret))
-}
-
-// ChangePassword 修改密码
-func (s *AuthService) ChangePassword(ctx context.Context, adminID uint, oldPassword, newPassword string) error {
-	// 查询管理员
-	admin, err := s.adminRepo.GetByID(ctx, adminID)
+	err := s.uc.ChangePassword(ctx, claims.UserID, req.OldPassword, req.NewPassword)
 	if err != nil {
-		return errors.New("管理员不存在")
+		return nil, err
 	}
+	return &v1.ChangePasswordReply{Success: true}, nil
+}
 
-	// 验证旧密码
-	if err := bcrypt.CompareHashAndPassword([]byte(admin.Password), []byte(oldPassword)); err != nil {
-		return errors.New("旧密码错误")
-	}
-
-	// 验证新密码强度
-	if err := s.validatePassword(newPassword); err != nil {
-		return err
-	}
-
-	// 加密新密码
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+func (s *AuthService) RefreshToken(ctx context.Context, req *v1.RefreshTokenRequest) (*v1.RefreshTokenReply, error) {
+	token, refresh, err := s.uc.RefreshToken(ctx, req.RefreshToken)
 	if err != nil {
-		logger.Error("加密密码失败", "error", err)
-		return errors.New("系统错误")
+		return nil, err
 	}
-
-	// 更新密码
-	admin.Password = string(hashedPassword)
-	return s.adminRepo.Update(ctx, admin)
-}
-
-// validatePassword 验证密码强度
-func (s *AuthService) validatePassword(password string) error {
-	cfg := s.cfg.Security.Password
-	
-	if len(password) < cfg.MinLength {
-		return errors.New("密码长度不能少于8位")
-	}
-	
-	if cfg.RequireUppercase {
-		hasUpper := false
-		for _, c := range password {
-			if c >= 'A' && c <= 'Z' {
-				hasUpper = true
-				break
-			}
-		}
-		if !hasUpper {
-			return errors.New("密码必须包含大写字母")
-		}
-	}
-	
-	if cfg.RequireLowercase {
-		hasLower := false
-		for _, c := range password {
-			if c >= 'a' && c <= 'z' {
-				hasLower = true
-				break
-			}
-		}
-		if !hasLower {
-			return errors.New("密码必须包含小写字母")
-		}
-	}
-	
-	if cfg.RequireNumber {
-		hasNumber := false
-		for _, c := range password {
-			if c >= '0' && c <= '9' {
-				hasNumber = true
-				break
-			}
-		}
-		if !hasNumber {
-			return errors.New("密码必须包含数字")
-		}
-	}
-	
-	if cfg.RequireSpecial {
-		hasSpecial := false
-		for _, c := range password {
-			if containsSpecialChar(cfg.SpecialChars, c) {
-				hasSpecial = true
-				break
-			}
-		}
-		if !hasSpecial {
-			return errors.New("密码必须包含特殊字符")
-		}
-	}
-	
-	return nil
-}
-
-func containsSpecialChar(specialChars string, c rune) bool {
-	for _, sc := range specialChars {
-		if c == sc {
-			return true
-		}
-	}
-	return false
-}
-
-// HashPassword 密码加密
-func HashPassword(password string) (string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hashedPassword), nil
-}
-
-// GetAdminByID 根据 ID 获取管理员信息
-func (s *AuthService) GetAdminByID(ctx context.Context, adminID uint) (*model.Admin, error) {
-	return s.adminRepo.GetByID(ctx, adminID)
-}
-
-// InitAdmin 初始化管理员账号
-func (s *AuthService) InitAdmin(ctx context.Context) error {
-	// 检查是否已有管理员
-	admins, _, err := s.adminRepo.List(ctx, 1, 1)
-	if err != nil {
-		return err
-	}
-	if len(admins) > 0 {
-		return nil // 已有管理员，无需初始化
-	}
-
-	// 创建初始管理员
-	hashedPassword, err := HashPassword(s.cfg.AdminAuth.InitAdmin.Password)
-	if err != nil {
-		return err
-	}
-
-	admin := &model.Admin{
-		Username: s.cfg.AdminAuth.InitAdmin.Username,
-		Password: hashedPassword,
-		Nickname: s.cfg.AdminAuth.InitAdmin.Nickname,
-		Status:   1,
-	}
-
-	return s.adminRepo.Create(ctx, admin)
+	return &v1.RefreshTokenReply{
+		Token:        token,
+		RefreshToken: refresh,
+	}, nil
 }

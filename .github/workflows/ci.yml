@@ -1,6 +1,7 @@
-# CI/CD 工作流 - 模板质量检查
-# 此CI用于验证模板的完整性和可用性，不是必须的构建流程
-# 使用者可以根据自己的需求修改或删除此配置
+# ========================================
+# Kratos Admin Template - CI
+# 模板质量检查（编译 + 格式 + Docker 构建验证）
+# ========================================
 
 name: Template Quality Check
 
@@ -9,82 +10,56 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-  # 允许手动触发
   workflow_dispatch:
 
 env:
   GO_VERSION: '1.25'
 
 jobs:
-  # 模板质量检查 - 验证代码能否正常编译
   quality-check:
-    name: Quality Check
+    name: Build & Verify
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
+    - uses: actions/checkout@v4
+
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
         check-latest: true
-    
-    - name: Enable Go toolchain auto-upgrade
-      run: |
-        echo "GOTOOLCHAIN=auto" >> $GITHUB_ENV
-        echo "GOFLAGS=-mod=mod" >> $GITHUB_ENV
-    
+
     - name: Download dependencies
       run: go mod download
-    
-    - name: Verify compilation
-      run: |
-        echo "✅ 验证模板编译..."
-        go build -v ./cmd/admin
-        echo "✅ 编译成功！模板质量检查通过"
-    
-    - name: Run tests (optional)
-      run: |
-        echo "📝 运行测试（如果存在）..."
-        go test -v ./... 2>&1 || echo "⚠️  没有测试或测试失败（这在模板中是正常的）"
-      continue-on-error: true
-    
-    - name: Check code formatting
-      run: |
-        echo "📝 检查代码格式..."
-        if [ -z "$(gofmt -l .)" ]; then
-          echo "✅ 代码格式正确"
-        else
-          echo "⚠️  以下文件需要格式化（可选）："
-          gofmt -l .
-        fi
+
+    - name: Build
+      run: go build -v ./cmd/admin
+
+    - name: Test
+      run: go test ./... 2>&1 || echo "⚠️ tests skipped or failed (normal for template)"
       continue-on-error: true
 
-  # Docker 镜像构建验证（可选）
+    - name: Format check
+      run: |
+        diff=$(gofmt -l .)
+        if [ -n "$diff" ]; then echo "⚠️ needs formatting:"; echo "$diff"; fi
+      continue-on-error: true
+
   docker-check:
-    name: Docker Build Check
+    name: Docker Build
     runs-on: ubuntu-latest
     needs: quality-check
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    - name: Build Docker image (local only)
+    - uses: actions/checkout@v4
+
+    - uses: docker/setup-buildx-action@v3
+
+    - name: Build image
       uses: docker/build-push-action@v5
       with:
         context: .
-        push: false  # 模板不推送，只验证能否构建
-        tags: template-check:latest
+        push: false
+        tags: admin:ci
         cache-from: type=gha
         cache-to: type=gha,mode=max
-    
-    - name: Verify Docker build
-      run: echo "✅ Docker 镜像构建成功！"

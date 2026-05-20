@@ -1,29 +1,51 @@
 package service
 
 import (
-	"admin/internal/data"
-	"admin/internal/data/model"
 	"context"
+
+	v1 "admin/api/admin/v1"
+	"admin/internal/biz"
+
+	"github.com/go-kratos/kratos/v2/log"
 )
 
-// PermissionService 权限服务
+// PermissionService 权限管理服务
 type PermissionService struct {
-	permissionRepo data.PermissionRepository
+	v1.UnimplementedPermissionServiceServer
+	uc  *biz.RoleUsecase
+	log *log.Helper
 }
 
 // NewPermissionService 创建权限服务
-func NewPermissionService(permissionRepo data.PermissionRepository) *PermissionService {
+func NewPermissionService(uc *biz.RoleUsecase, logger log.Logger) *PermissionService {
 	return &PermissionService{
-		permissionRepo: permissionRepo,
+		uc:  uc,
+		log: log.NewHelper(log.With(logger, "module", "service/permission")),
 	}
 }
 
-// ListPermissions 列出权限
-func (s *PermissionService) ListPermissions(ctx context.Context) ([]*model.Permission, error) {
-	return s.permissionRepo.List(ctx)
+func (s *PermissionService) ListPermissions(ctx context.Context, _ *v1.ListPermissionsRequest) (*v1.ListPermissionsReply, error) {
+	perms, err := s.uc.ListPermissions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var items []*v1.PermissionInfo
+	for _, p := range perms {
+		items = append(items, permToProto(p))
+	}
+	return &v1.ListPermissionsReply{Items: items}, nil
 }
 
-// GetPermission 获取权限
-func (s *PermissionService) GetPermission(ctx context.Context, id uint) (*model.Permission, error) {
-	return s.permissionRepo.GetByID(ctx, id)
+func (s *PermissionService) GetPermissionTree(ctx context.Context, _ *v1.GetPermissionTreeRequest) (*v1.GetPermissionTreeReply, error) {
+	perms, err := s.uc.GetPermissionTree(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var items []*v1.PermissionInfo
+	for _, p := range perms {
+		items = append(items, permToProto(p))
+	}
+	return &v1.GetPermissionTreeReply{Items: items}, nil
 }

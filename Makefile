@@ -1,92 +1,116 @@
 # ========================================
-# 模板项目 Makefile
-# 使用者可以根据自己的需求修改此文件
+# Kratos 企业级管理端模板 - Makefile
 # ========================================
 
-# 项目配置（使用者需要修改这些变量）
-BINARY_NAME ?= your-project-name  # 修改为您的项目名称
-MAIN_PATH ?= cmd/admin/main.go    # 主程序入口
-CONFIG_PATH ?= cmd/admin/conf/config.yaml  # 配置文件路径
-VERSION ?= 1.0.0
+BINARY_NAME = admin
+MAIN_PATH   = ./cmd/admin
+CONF_PATH   = ./cmd/admin/conf/config.yaml
+VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 
-.PHONY: build run clean test docker proto wire deps fmt help
+PROTO_DIR   = api/admin/v1
+PROTO_FILES = $(wildcard $(PROTO_DIR)/*.proto)
 
-# 构建
+.PHONY: all build run clean test fmt deps proto wire generate lint docker help
+
+# 默认目标
+all: generate build
+
+# ==================== 构建 ====================
+
 build:
-	@echo "🔨 Building $(BINARY_NAME)..."
+	@echo "🔨 Building $(BINARY_NAME) $(VERSION)..."
 	go build -ldflags "-X main.Version=$(VERSION)" -o bin/$(BINARY_NAME) $(MAIN_PATH)
 	@echo "✅ Build completed: bin/$(BINARY_NAME)"
 
-# 运行
 run:
 	@echo "🚀 Starting $(BINARY_NAME)..."
-	go run $(MAIN_PATH) -config $(CONFIG_PATH)
+	go run $(MAIN_PATH) -conf $(CONF_PATH)
 
-# 清理
 clean:
 	@echo "🧹 Cleaning..."
 	rm -rf bin/
-	@echo "✅ Clean completed!"
+	@echo "✅ Clean completed"
 
-# 测试
+# ==================== 代码质量 ====================
+
 test:
 	@echo "🧪 Running tests..."
-	go test -v ./...
+	go test -v -cover ./...
 
-# 格式化代码
 fmt:
-	@echo "🎨 Formatting code..."
-	go fmt ./...
+	@echo "🎨 Formatting..."
+	gofmt -w .
 
-# 下载依赖
-deps:
-	@echo "📦 Downloading dependencies..."
-	go mod download
+lint:
+	@echo "🔍 Linting..."
+	golangci-lint run ./...
 
-# 生成 proto 代码
+# ==================== 代码生成 ====================
+
 proto:
 	@echo "📝 Generating proto code..."
-	protoc --go_out=. --go_opt=paths=source_relative \
-		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
-		proto/admin/v1/admin.proto
-	@echo "✅ Proto generation completed!"
+	protoc --proto_path=$(PROTO_DIR) \
+		--go_out=paths=source_relative:$(PROTO_DIR) \
+		--go-grpc_out=paths=source_relative:$(PROTO_DIR) \
+		$(PROTO_FILES)
+	@echo "✅ Proto generation completed"
 
-# 生成 wire 代码
 wire:
 	@echo "🔌 Generating wire code..."
 	cd cmd/admin && wire
-	@echo "✅ Wire generation completed!"
+	@echo "✅ Wire generation completed"
 
-# 代码检查（可选）
-lint:
-	@echo "🔍 Running linter..."
-	golangci-lint run
+# proto + wire 一键生成
+generate: proto wire
 
-# Docker 构建（使用者需要修改镜像名）
+deps:
+	@echo "📦 Downloading dependencies..."
+	go mod download
+	go mod tidy
+
+# ==================== Docker ====================
+
 docker:
 	@echo "🐳 Building Docker image..."
-	docker build -t YOUR_USERNAME/$(BINARY_NAME):latest .
-	@echo "✅ Docker image built: YOUR_USERNAME/$(BINARY_NAME):latest"
+	docker build -t $(BINARY_NAME):$(VERSION) .
+	@echo "✅ Docker image built: $(BINARY_NAME):$(VERSION)"
 
-# 帮助
+docker-compose-up:
+	docker-compose up -d
+
+docker-compose-down:
+	docker-compose down
+
+# ==================== 帮助 ====================
+
 help:
 	@echo ""
-	@echo "📋 Available commands:"
-	@echo "  make build    - Build the application"
-	@echo "  make run      - Run the application"
-	@echo "  make clean    - Clean build artifacts"
-	@echo "  make test     - Run tests"
-	@echo "  make fmt      - Format code"
-	@echo "  make deps     - Download dependencies"
-	@echo "  make proto    - Generate proto code"
-	@echo "  make wire     - Generate wire code"
-	@echo "  make lint     - Run linter (requires golangci-lint)"
-	@echo "  make docker   - Build Docker image"
-	@echo "  make help     - Show this help"
+	@echo "📋 Kratos Admin Template - Available Commands"
+	@echo "============================================="
 	@echo ""
-	@echo "💡 Quick Start:"
-	@echo "  1. make deps          # Install dependencies"
-	@echo "  2. make proto         # Generate proto code"
-	@echo "  3. cp cmd/admin/conf/config.yaml.example cmd/admin/conf/config.yaml"
-	@echo "  4. make run           # Run the application"
+	@echo "  Build & Run:"
+	@echo "    make build          Build binary"
+	@echo "    make run            Run application"
+	@echo "    make clean          Clean build artifacts"
+	@echo ""
+	@echo "  Code Quality:"
+	@echo "    make test           Run tests"
+	@echo "    make fmt            Format code"
+	@echo "    make lint           Run linter"
+	@echo ""
+	@echo "  Code Generation:"
+	@echo "    make proto          Generate proto code"
+	@echo "    make wire           Generate wire code"
+	@echo "    make generate       Generate all (proto + wire)"
+	@echo ""
+	@echo "  Docker:"
+	@echo "    make docker              Build Docker image"
+	@echo "    make docker-compose-up   Start all services"
+	@echo "    make docker-compose-down Stop all services"
+	@echo ""
+	@echo "  Quick Start:"
+	@echo "    1. make deps"
+	@echo "    2. cp cmd/admin/conf/config.yaml.example cmd/admin/conf/config.yaml"
+	@echo "    3. docker-compose up -d  (start PostgreSQL & Redis)"
+	@echo "    4. make run"
 	@echo ""

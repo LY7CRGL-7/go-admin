@@ -1,139 +1,84 @@
 # ========================================
-# 模板项目 Docker Compose 配置
-# 此文件包含所有可选的基础设施服务
-# 使用者可以根据需要启用/禁用服务
+# Kratos Admin Template - Docker Compose
+# 核心依赖：PostgreSQL + Redis
+# 可选：切换为 MySQL（见注释）
 # ========================================
 
-version: '3.8'
-
 services:
-  # ========================================
-  # PostgreSQL 数据库（必需）
-  # ========================================
+  # ---------- PostgreSQL ----------
+  # 切换 MySQL：注释此块，取消下方 mysql 块注释
   postgres:
-    image: postgres:15-alpine
-    container_name: YOUR_PROJECT-postgres  # 修改为您的项目名
+    image: postgres:16-alpine
+    container_name: admin-postgres
     environment:
-      POSTGRES_DB: your_database           # 修改为您的数据库名
-      POSTGRES_USER: your_user             # 修改为您的数据库用户
-      POSTGRES_PASSWORD: your_password     # ⚠️ 修改为强密码
+      POSTGRES_DB: admin_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123  # ⚠️ 生产环境请修改
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./docs/init.sql:/docker-entrypoint-initdb.d/init.sql  # 初始化脚本
-    networks:
-      - your-project-network               # 修改为您的网络名
+      - pg_data:/var/lib/postgresql/data
+      - ./docs/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d admin_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
-  # ========================================
-  # Redis 缓存（可选，用于限流、会话等）
-  # ========================================
+  # ---------- MySQL（可选，取消注释即可使用） ----------
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: admin-mysql
+  #   environment:
+  #     MYSQL_DATABASE: admin_db
+  #     MYSQL_USER: admin
+  #     MYSQL_PASSWORD: admin123
+  #     MYSQL_ROOT_PASSWORD: root123
+  #   ports:
+  #     - "3306:3306"
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+  #   command: --default-authentication-plugin=mysql_native_password
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 5
+
+  # ---------- Redis ----------
   redis:
     image: redis:7-alpine
-    container_name: YOUR_PROJECT-redis     # 修改为您的项目名
-    command: redis-server --requirepass your_redis_password  # ⚠️ 修改为强密码
+    container_name: admin-redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    networks:
-      - your-project-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
-  # ========================================
-  # Kafka 消息队列（可选，用于异步处理）
-  # 如果不需要可以删除此服务和 zookeeper
-  # ========================================
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: YOUR_PROJECT-kafka
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    networks:
-      - your-project-network
+  # ---------- Admin Service（可选） ----------
+  # 取消注释后可直接 docker-compose up 启动完整服务
+  # admin:
+  #   build:
+  #     context: .
+  #     args:
+  #       VERSION: dev
+  #   container_name: admin-service
+  #   ports:
+  #     - "8080:8080"  # HTTP
+  #     - "9090:9090"  # gRPC
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ./cmd/admin/conf/config.yaml:/app/config.yaml
 
-  # Zookeeper (Kafka 依赖)
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: YOUR_PROJECT-zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    networks:
-      - your-project-network
-
-  # ========================================
-  # MinIO 对象存储（可选，用于文件存储）
-  # 如果不需要可以删除此服务
-  # ========================================
-  minio:
-    image: minio/minio:latest
-    container_name: YOUR_PROJECT-minio
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"   # API 端口
-      - "9001:9001"   # Console 端口
-    environment:
-      MINIO_ROOT_USER: your_minio_user      # 修改为您的用户名
-      MINIO_ROOT_PASSWORD: your_minio_pass  # ⚠️ 修改为强密码
-    volumes:
-      - minio_data:/data
-    networks:
-      - your-project-network
-
-  # ========================================
-  # Prometheus 监控（可选）
-  # 如果不需要可以删除此服务
-  # ========================================
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: YOUR_PROJECT-prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    networks:
-      - your-project-network
-
-  # ========================================
-  # Grafana 可视化（可选，依赖 Prometheus）
-  # 如果不需要可以删除此服务
-  # ========================================
-  grafana:
-    image: grafana/grafana:latest
-    container_name: YOUR_PROJECT-grafana
-    ports:
-      - "3000:3000"
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: your_grafana_password  # ⚠️ 修改为强密码
-    volumes:
-      - grafana_data:/var/lib/grafana
-    depends_on:
-      - prometheus
-    networks:
-      - your-project-network
-
-# ========================================
-# 数据卷配置
-# ========================================
 volumes:
-  postgres_data:
+  pg_data:
   redis_data:
-  minio_data:
-  prometheus_data:
-  grafana_data:
-
-# ========================================
-# 网络配置
-# ========================================
-networks:
-  your-project-network:    # 修改为您的网络名
-    driver: bridge
+  # mysql_data:

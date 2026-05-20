@@ -1,77 +1,110 @@
 package service
 
 import (
-	"admin/internal/data"
-	"admin/internal/data/model"
 	"context"
-	"errors"
+
+	v1 "admin/api/admin/v1"
+	"admin/internal/biz"
+	"admin/internal/data/model"
+
+	"github.com/go-kratos/kratos/v2/log"
 )
 
-// RoleService 角色服务
+// RoleService 角色管理服务
 type RoleService struct {
-	roleRepo       data.RoleRepository
-	permissionRepo data.PermissionRepository
+	v1.UnimplementedRoleServiceServer
+	uc  *biz.RoleUsecase
+	log *log.Helper
 }
 
 // NewRoleService 创建角色服务
-func NewRoleService(roleRepo data.RoleRepository, permissionRepo data.PermissionRepository) *RoleService {
+func NewRoleService(uc *biz.RoleUsecase, logger log.Logger) *RoleService {
 	return &RoleService{
-		roleRepo:       roleRepo,
-		permissionRepo: permissionRepo,
+		uc:  uc,
+		log: log.NewHelper(log.With(logger, "module", "service/role")),
 	}
 }
 
-// CreateRole 创建角色
-func (s *RoleService) CreateRole(ctx context.Context, role *model.Role) error {
-	// 检查角色代码是否已存在
-	existing, _ := s.roleRepo.GetByCode(ctx, role.Code)
-	if existing != nil {
-		return errors.New("角色代码已存在")
+func (s *RoleService) CreateRole(ctx context.Context, req *v1.CreateRoleRequest) (*v1.RoleInfo, error) {
+	role := &model.Role{
+		Name:        req.Name,
+		Code:        req.Code,
+		Description: req.Description,
+		Status:      1,
+	}
+	if claims := GetClaimsFromContext(ctx); claims != nil {
+		role.TenantID = claims.TenantID
 	}
 
-	return s.roleRepo.Create(ctx, role)
+	if err := s.uc.Create(ctx, role); err != nil {
+		return nil, err
+	}
+	return roleToProto(role), nil
 }
 
-// GetRole 获取角色
-func (s *RoleService) GetRole(ctx context.Context, id uint) (*model.Role, error) {
-	return s.roleRepo.GetByID(ctx, id)
-}
-
-// UpdateRole 更新角色
-func (s *RoleService) UpdateRole(ctx context.Context, role *model.Role) error {
-	_, err := s.roleRepo.GetByID(ctx, role.ID)
+func (s *RoleService) GetRole(ctx context.Context, req *v1.GetRoleRequest) (*v1.RoleInfo, error) {
+	role, err := s.uc.Get(ctx, uint(req.Id))
 	if err != nil {
-		return errors.New("角色不存在")
+		return nil, err
 	}
-
-	return s.roleRepo.Update(ctx, role)
+	return roleToProto(role), nil
 }
 
-// DeleteRole 删除角色
-func (s *RoleService) DeleteRole(ctx context.Context, id uint) error {
-	return s.roleRepo.Delete(ctx, id)
-}
-
-// ListRoles 列出角色
-func (s *RoleService) ListRoles(ctx context.Context, page, pageSize int) ([]*model.Role, int64, error) {
-	return s.roleRepo.List(ctx, page, pageSize)
-}
-
-// AssignPermissions 分配权限
-func (s *RoleService) AssignPermissions(ctx context.Context, roleID uint, permissionIDs []uint) error {
-	// 验证角色是否存在
-	_, err := s.roleRepo.GetByID(ctx, roleID)
+func (s *RoleService) UpdateRole(ctx context.Context, req *v1.UpdateRoleRequest) (*v1.RoleInfo, error) {
+	role, err := s.uc.Get(ctx, uint(req.Id))
 	if err != nil {
-		return errors.New("角色不存在")
+		return nil, err
 	}
 
-	// 验证权限是否存在
-	for _, permissionID := range permissionIDs {
-		_, err := s.permissionRepo.GetByID(ctx, permissionID)
-		if err != nil {
-			return errors.New("权限不存在")
-		}
+	if req.Name != "" {
+		role.Name = req.Name
+	}
+	if req.Description != "" {
+		role.Description = req.Description
+	}
+	if req.Status != 0 {
+		role.Status = int8(req.Status)
+	}
+	role.Sort = int(req.Sort)
+
+	if err := s.uc.Update(ctx, role); err != nil {
+		return nil, err
+	}
+	return roleToProto(role), nil
+}
+
+func (s *RoleService) DeleteRole(ctx context.Context, req *v1.DeleteRoleRequest) (*v1.DeleteReply, error) {
+	if err := s.uc.Delete(ctx, uint(req.Id)); err != nil {
+		return nil, err
+	}
+	return &v1.DeleteReply{Success: true}, nil
+}
+
+func (s *RoleService) ListRoles(ctx context.Context, req *v1.ListRolesRequest) (*v1.ListRolesReply, error) {
+	var tenantID uint
+	if claims := GetClaimsFromContext(ctx); claims != nil {
+		tenantID = claims.TenantID
 	}
 
-	return s.roleRepo.AssignPermissions(ctx, roleID, permissionIDs)
+	roles, total, err := s.uc.List(ctx, tenantID, int(req.Page), int(req.PageSize))
+	if err != nil {
+		return nil, err
+	}
+
+	var items []*v1.RoleInfo
+	for _, r := range roles {
+		items = append(items, roleToProto(r))
+	}
+	return &v1.ListRolesReply{Items: items, Total: total}, nil
+}
+
+func (s *RoleService) AssignPermissions(ctx context.Context, req *v1.AssignPermissionsRequest) (*v1.AssignPermissionsReply, error) {
+	var permIDs []uint
+	for _, id := range req.PermissionIds {
+		permIDs = append(permIDs, uint(id))
+	}
+	if err := s.uc.AssignPermissions(ctx, uint(req.RoleId), permIDs); err != nil {
+		return nil, err
+	}
+	return &v1.AssignPermissionsReply{Success: true}, nil
 }

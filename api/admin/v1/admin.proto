@@ -1,0 +1,290 @@
+syntax = "proto3";
+
+package admin.v1;
+
+option go_package = "admin/api/admin/v1;v1";
+
+import "google/protobuf/timestamp.proto";
+
+// ==================== 通用 ====================
+
+message PageRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+// ==================== 认证 ====================
+
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginReply);
+  rpc Logout(LogoutRequest) returns (LogoutReply);
+  rpc GetProfile(GetProfileRequest) returns (UserInfo);
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordReply);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenReply);
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginReply {
+  string token = 1;
+  string refresh_token = 2;
+  UserInfo user = 3;
+}
+
+message LogoutRequest {}
+message LogoutReply { bool success = 1; }
+
+message GetProfileRequest {}
+
+message ChangePasswordRequest {
+  string old_password = 1;
+  string new_password = 2;
+}
+message ChangePasswordReply { bool success = 1; }
+
+message RefreshTokenRequest { string refresh_token = 1; }
+message RefreshTokenReply {
+  string token = 1;
+  string refresh_token = 2;
+}
+
+// ==================== 用户管理 ====================
+
+service UserService {
+  rpc CreateUser(CreateUserRequest) returns (UserInfo);
+  rpc GetUser(GetUserRequest) returns (UserInfo);
+  rpc UpdateUser(UpdateUserRequest) returns (UserInfo);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteReply);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersReply);
+  rpc AssignRoles(AssignRolesRequest) returns (AssignRolesReply);
+}
+
+message UserInfo {
+  int64 id = 1;
+  string username = 2;
+  string nickname = 3;
+  string email = 4;
+  string phone = 5;
+  string avatar = 6;
+  int32 status = 7;
+  int64 tenant_id = 8;
+  repeated string roles = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string password = 2;
+  string nickname = 3;
+  string email = 4;
+  string phone = 5;
+  repeated int64 role_ids = 6;
+}
+
+message GetUserRequest { int64 id = 1; }
+
+message UpdateUserRequest {
+  int64 id = 1;
+  string nickname = 2;
+  string email = 3;
+  string phone = 4;
+  string avatar = 5;
+  int32 status = 6;
+  repeated int64 role_ids = 7;
+}
+
+message DeleteUserRequest { int64 id = 1; }
+message DeleteReply { bool success = 1; }
+
+message ListUsersRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  int32 status = 4;
+}
+
+message ListUsersReply {
+  repeated UserInfo items = 1;
+  int64 total = 2;
+}
+
+message AssignRolesRequest {
+  int64 user_id = 1;
+  repeated int64 role_ids = 2;
+}
+message AssignRolesReply { bool success = 1; }
+
+// ==================== 角色管理 ====================
+
+service RoleService {
+  rpc CreateRole(CreateRoleRequest) returns (RoleInfo);
+  rpc GetRole(GetRoleRequest) returns (RoleInfo);
+  rpc UpdateRole(UpdateRoleRequest) returns (RoleInfo);
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteReply);
+  rpc ListRoles(ListRolesRequest) returns (ListRolesReply);
+  rpc AssignPermissions(AssignPermissionsRequest) returns (AssignPermissionsReply);
+}
+
+message RoleInfo {
+  int64 id = 1;
+  string name = 2;
+  string code = 3;
+  string description = 4;
+  int32 status = 5;
+  int32 sort = 6;
+  int64 tenant_id = 7;
+  repeated PermissionInfo permissions = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
+
+message CreateRoleRequest {
+  string name = 1;
+  string code = 2;
+  string description = 3;
+}
+
+message GetRoleRequest { int64 id = 1; }
+
+message UpdateRoleRequest {
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+  int32 status = 4;
+  int32 sort = 5;
+}
+
+message DeleteRoleRequest { int64 id = 1; }
+
+message ListRolesRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListRolesReply {
+  repeated RoleInfo items = 1;
+  int64 total = 2;
+}
+
+message AssignPermissionsRequest {
+  int64 role_id = 1;
+  repeated int64 permission_ids = 2;
+}
+message AssignPermissionsReply { bool success = 1; }
+
+// ==================== 权限管理 ====================
+
+service PermissionService {
+  rpc ListPermissions(ListPermissionsRequest) returns (ListPermissionsReply);
+  rpc GetPermissionTree(GetPermissionTreeRequest) returns (GetPermissionTreeReply);
+}
+
+message PermissionInfo {
+  int64 id = 1;
+  string name = 2;
+  string code = 3;
+  string type = 4;       // menu / button / api
+  string path = 5;
+  string method = 6;     // GET / POST / PUT / DELETE
+  int64 parent_id = 7;
+  int32 sort = 8;
+  int32 status = 9;
+  repeated PermissionInfo children = 10;
+}
+
+message ListPermissionsRequest {}
+message ListPermissionsReply { repeated PermissionInfo items = 1; }
+
+message GetPermissionTreeRequest {}
+message GetPermissionTreeReply { repeated PermissionInfo items = 1; }
+
+// ==================== 多租户管理 ====================
+
+service TenantService {
+  rpc CreateTenant(CreateTenantRequest) returns (TenantInfo);
+  rpc GetTenant(GetTenantRequest) returns (TenantInfo);
+  rpc UpdateTenant(UpdateTenantRequest) returns (TenantInfo);
+  rpc DeleteTenant(DeleteTenantRequest) returns (DeleteReply);
+  rpc ListTenants(ListTenantsRequest) returns (ListTenantsReply);
+}
+
+message TenantInfo {
+  int64 id = 1;
+  string name = 2;
+  string code = 3;
+  string domain = 4;
+  string contact_name = 5;
+  string contact_phone = 6;
+  int32 status = 7;
+  int32 max_users = 8;
+  google.protobuf.Timestamp expire_at = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message CreateTenantRequest {
+  string name = 1;
+  string code = 2;
+  string domain = 3;
+  string contact_name = 4;
+  string contact_phone = 5;
+  int32 max_users = 6;
+}
+
+message GetTenantRequest { int64 id = 1; }
+
+message UpdateTenantRequest {
+  int64 id = 1;
+  string name = 2;
+  string domain = 3;
+  string contact_name = 4;
+  string contact_phone = 5;
+  int32 status = 6;
+  int32 max_users = 7;
+}
+
+message DeleteTenantRequest { int64 id = 1; }
+
+message ListTenantsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListTenantsReply {
+  repeated TenantInfo items = 1;
+  int64 total = 2;
+}
+
+// ==================== 审计日志 ====================
+
+service AuditLogService {
+  rpc ListAuditLogs(ListAuditLogsRequest) returns (ListAuditLogsReply);
+}
+
+message AuditLogInfo {
+  int64 id = 1;
+  int64 user_id = 2;
+  string username = 3;
+  string action = 4;
+  string resource = 5;
+  string method = 6;
+  string path = 7;
+  string ip = 8;
+  int32 status = 9;
+  int64 duration_ms = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message ListAuditLogsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  int64 user_id = 3;
+  string action = 4;
+}
+
+message ListAuditLogsReply {
+  repeated AuditLogInfo items = 1;
+  int64 total = 2;
+}

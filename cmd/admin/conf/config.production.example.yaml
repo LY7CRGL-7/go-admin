@@ -1,90 +1,45 @@
-# 生产环境安全配置示例
-# 复制此文件为 config.production.yaml 并根据实际情况修改
+# ========================================
+# 生产环境配置示例
+# 复制为 config.yaml 并修改敏感信息
+# ========================================
 
 server:
-  port: 8080
-  mode: release  # ⚠️ 生产环境必须为 release
-  read_timeout: 10s
-  write_timeout: 10s
+  http:
+    addr: 0.0.0.0:8080
+    timeout: 10s
+  grpc:
+    addr: 0.0.0.0:9090
+    timeout: 10s
 
-log:
-  level: warn  # 生产环境建议 warn 或 error
-  file_path: /opt/apps/admin/logs/admin.log
-  max_size: 200
-  max_backups: 30
-  max_age: 180
+data:
+  database:
+    driver: postgres
+    source: "host=db.internal port=5432 user=admin password=CHANGE_ME dbname=admin_db sslmode=require timezone=Asia/Shanghai"
+    # MySQL:
+    # driver: mysql
+    # source: "admin:CHANGE_ME@tcp(db.internal:3306)/admin_db?charset=utf8mb4&parseTime=True&loc=Local"
+    max_idle: 10
+    max_open: 50
+    max_lifetime: 1800s
 
-jwt:
-  # ⚠️ 使用强随机密钥，建议 64 位以上
-  # 生成方法: openssl rand -base64 64
-  secret: CHANGE-THIS-TO-A-VERY-LONG-RANDOM-STRING-IN-PRODUCTION
-  expire: 2h  # 生产环境缩短 Token 有效期
-  issuer: admin-system
+  redis:
+    addr: redis.internal:6379
+    password: CHANGE_ME
+    db: 0
+    dial_timeout: 5s
+    read_timeout: 3s
+    write_timeout: 3s
 
-admin_auth:
+auth:
+  # ⚠️ 必须替换为强随机密钥：openssl rand -base64 64
+  jwt_secret: CHANGE-THIS-TO-A-RANDOM-256-BIT-SECRET
+  token_expire: 2h
+  refresh_expire: 72h
   init_admin:
     username: admin
-    # ⚠️ 生产环境必须修改为强密码
     password: CHANGE-THIS-TO-STRONG-PASSWORD
     nickname: 系统管理员
 
-database:
-  driver: postgres
-  # ⚠️ 生产环境配置
-  dsn: host=db.internal port=5432 user=admin password=STRONG-PASSWORD dbname=admin_db sslmode=require timezone=Asia/Shanghai
-  max_open_conns: 50
-  max_idle_conns: 10
-  conn_max_lifetime: 1800s  # 缩短连接生命周期
-
-redis:
-  addr: redis.internal:6379
-  password: STRONG-REDIS-PASSWORD  # ⚠️ 设置 Redis 密码
-  db: 0
-  pool_size: 50
-  min_idle_conns: 10
-
-security:
-  password:
-    min_length: 12  # ⚠️ 增加最小密码长度
-    require_uppercase: true
-    require_lowercase: true
-    require_number: true
-    require_special: true
-    special_chars: "!@#$%^&*()_+-=[]{}|;:',.<>?"
-  
-  login:
-    max_attempts: 3  # ⚠️ 减少允许尝试次数
-    lockout_duration: 1h  # ⚠️ 增加锁定时间
-    attempt_window: 30m
-  
-  # ⚠️ 生产环境强烈建议启用 IP 白名单
-  ip_whitelist:
-    - 10.0.1.100
-    - 10.0.1.101
-    - 192.168.1.0/24  # 支持 CIDR
-  
-  cors:
-    # ⚠️ 生产环境指定具体域名，不要使用 *
-    allow_origins:
-      - https://admin.example.com
-    allow_methods:
-      - GET
-      - POST
-      - PUT
-      - DELETE
-      - OPTIONS
-    allow_credentials: true
-    max_age: 86400
-
-rate_limit:
-  enabled: true
-  global_qps: 500  # 生产环境根据实际调整
-  per_user_qps: 30
-  per_ip_qps: 50
-
-audit:
-  enabled: true
-  log_file: /opt/apps/admin/logs/audit.log
-  max_size: 500  # 审计日志更大存储空间
-  max_backups: 90
-  max_age: 365  # 审计日志保留一年
+tenant:
+  enabled: false
+  default_tenant_code: default

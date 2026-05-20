@@ -1,45 +1,35 @@
 # ========================================
-# 模板项目 Dockerfile
-# 使用者可以根据自己的需求修改此文件
+# Kratos Admin Template - Dockerfile
+# 工业标准：固定产物路径，CI 注入版本
 # ========================================
 
-# 构建阶段
+# ---------- Build ----------
 FROM golang:1.25-alpine AS builder
 
-# 设置构建参数（使用者可以修改）
-ARG APP_NAME=admin
-ARG APP_VERSION=1.0.0
+ARG VERSION=dev
 
-WORKDIR /app
+WORKDIR /src
 
-# 复制依赖文件
 COPY go.mod go.sum ./
 RUN go mod download
 
-# 复制源代码
 COPY . .
 
-# 构建
-RUN mkdir -p /app/bin && \
-    CGO_ENABLED=0 GOOS=linux go build \
-    -ldflags "-X main.Version=${APP_VERSION}" \
-    -o /app/bin/${APP_NAME} \
-    cmd/admin/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags "-s -w -X main.Version=${VERSION}" \
+    -o /app ./cmd/admin
 
-# 运行阶段
-FROM alpine:latest
+# ---------- Runtime ----------
+FROM alpine:3.20
 
-# 安装必要的运行时依赖
 RUN apk --no-cache add ca-certificates tzdata
 
-WORKDIR /root/
+WORKDIR /app
 
-# 从 builder 阶段复制二进制文件
-COPY --from=builder /app/bin/${APP_NAME} .
-COPY --from=builder /app/cmd/admin/conf/config.yaml ./config.yaml
+COPY --from=builder /app .
+COPY cmd/admin/conf/config.yaml.example config.yaml
 
-# 暴露端口（根据您的服务修改）
-EXPOSE 8080
+EXPOSE 8080 9090
 
-# 运行
-CMD ["./admin", "-config", "config.yaml"]
+ENTRYPOINT ["./admin"]
+CMD ["-conf", "config.yaml"]

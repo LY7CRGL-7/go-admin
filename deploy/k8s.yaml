@@ -1,7 +1,12 @@
+# ========================================
+# Kratos Admin Template - Kubernetes
+# Deployment + Service（HTTP 8080 / gRPC 9090）
+# ========================================
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: admin-service
+  name: admin
   labels:
     app: admin
 spec:
@@ -16,53 +21,55 @@ spec:
     spec:
       containers:
         - name: admin
-          image: admin:latest
+          image: admin:latest  # 替换为你的镜像地址
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
+            - name: grpc
+              containerPort: 9090
           env:
             - name: TZ
-              value: "Asia/Shanghai"
+              value: Asia/Shanghai
           volumeMounts:
             - name: config
-              mountPath: /root/config.yaml
+              mountPath: /app/config.yaml
               subPath: config.yaml
-            - name: logs
-              mountPath: /opt/apps/admin/logs
           resources:
             requests:
-              cpu: 200m
-              memory: 256Mi
+              cpu: 100m
+              memory: 128Mi
             limits:
               cpu: 500m
               memory: 512Mi
           readinessProbe:
             httpGet:
               path: /health
-              port: 8080
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health
-              port: 8080
-            initialDelaySeconds: 15
+              port: http
+            initialDelaySeconds: 10
             periodSeconds: 20
       volumes:
         - name: config
           configMap:
             name: admin-config
-        - name: logs
-          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: admin-service
+  name: admin
 spec:
   selector:
     app: admin
   ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8080
+    - name: http
+      port: 8080
+      targetPort: http
+    - name: grpc
+      port: 9090
+      targetPort: grpc
   type: ClusterIP
