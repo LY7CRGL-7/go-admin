@@ -20,10 +20,11 @@ RUN go mod download
 COPY . .
 
 # 构建
-#RUN CGO_ENABLED=0 GOOS=linux go build \
-#    -ldflags "-X main.Version=${APP_VERSION}" \
-#    -o /app/bin/${APP_NAME} \
-#    cmd/admin/main.go
+RUN mkdir -p /app/bin && \
+    CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags "-X main.Version=${APP_VERSION}" \
+    -o /app/bin/${APP_NAME} \
+    cmd/admin/main.go
 
 # 运行阶段
 FROM alpine:latest
