@@ -77,10 +77,14 @@
 
 - **Go 1.25.0+**（支持 toolchain 自动升级）
 - Docker & Docker Compose
-- protoc 编译器（可选，用于生成 proto 代码）
+- protoc 编译器（**仅修改 .proto 文件时需要**，初次使用无需安装）
 
 > 💡 **Go Toolchain 自动升级**：  
 > 项目使用 `go 1.25.0` 和 `toolchain go1.25.0` 声明，CI/CD 配置 `GOTOOLCHAIN=auto`，支持自动下载更高版本工具链。
+
+> 📦 **proto 生成文件已内置**：  
+> 仓库中已包含 `*.pb.go` 文件，clone 后**无需运行** `make proto` 即可直接编译。  
+> 只有修改了 `.proto` 文件时，才需要重新执行 `make proto`。
 
 ### 一键启动
 
@@ -95,13 +99,10 @@ docker-compose up -d
 # 3. 下载依赖
 make deps
 
-# 4. 生成 proto 代码
-make proto
-
-# 5. 配置项目
+# 4. 配置项目
 cp cmd/admin/conf/config.yaml.example cmd/admin/conf/config.yaml
 
-# 6. 运行
+# 5. 运行
 make run
 ```
 
@@ -203,10 +204,7 @@ docker-compose up -d
 # 下载依赖
 make deps
 
-# 生成 proto 代码
-make proto
-
-# 运行项目
+# 运行项目（proto 文件已内置，无需先生成）
 make run
 ```
 
@@ -458,8 +456,7 @@ Dockerfile 使用多阶段构建：
 
 模板包含的 CI 用于**验证模板质量**，不是必须的构建流程：
 
-- ✅ 编译验证
-- ✅ Proto 代码生成
+- ✅ 编译验证（直接编译，无需安装 protoc）
 - ✅ Docker 构建验证
 - 📝 代码测试（可选，失败不阻断）
 - 📝 格式检查（可选，失败不阻断）
@@ -575,17 +572,29 @@ docker-compose up -d postgres redis
 # 或注释掉 docker-compose.yaml 中不需要的服务
 ```
 
-### Q: Proto 代码生成失败？
+### Q: 需要安装 protoc 吗？
+
+**初次使用不需要**。仓库已内置生成好的 `*.pb.go` 文件，clone 后直接 `make run` 即可。
+
+只有**修改了 `.proto` 文件**后才需要重新生成：
 
 ```bash
-# 确保已安装必要工具
-protoc --version
-which protoc-gen-go
-which protoc-gen-go-grpc
+# 安装 protoc（如需修改 proto 文件）
+# macOS
+brew install protobuf
 
-# 重新安装
+# Linux
+wget https://github.com/protocolbuffers/protobuf/releases/download/v29.3/protoc-29.3-linux-x86_64.zip
+sudo unzip protoc.zip -d /usr/local/
+
+# 安装 Go 插件
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# 修改 .proto 后重新生成，并提交 .pb.go
+make proto
+git add proto/
+git commit -m "feat: 更新 proto 定义"
 ```
 
 ### Q: 数据库连接失败？
