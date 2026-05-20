@@ -19,6 +19,18 @@ RUN go mod download
 # 复制源代码
 COPY . .
 
+# 安装 protoc 并生成 proto 代码
+RUN apk add --no-cache wget unzip && \
+    wget -q https://github.com/protocolbuffers/protobuf/releases/download/v29.3/protoc-29.3-linux-x86_64.zip -O /tmp/protoc.zip && \
+    unzip -q /tmp/protoc.zip -d /usr/local && \
+    rm /tmp/protoc.zip && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest && \
+    protoc \
+        --go_out=. --go_opt=paths=source_relative \
+        --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+        proto/admin/v1/admin.proto
+
 # 构建
 RUN mkdir -p /app/bin && \
     CGO_ENABLED=0 GOOS=linux go build \
