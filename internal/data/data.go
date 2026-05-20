@@ -96,7 +96,7 @@ func newDB(c conf.Database) (*gorm.DB, error) {
 		sqlDB.SetMaxOpenConns(c.MaxOpen)
 	}
 	if c.MaxLifetime > 0 {
-		sqlDB.SetConnMaxLifetime(c.MaxLifetime)
+		sqlDB.SetConnMaxLifetime(time.Duration(c.MaxLifetime))
 	} else {
 		sqlDB.SetConnMaxLifetime(time.Hour)
 	}
@@ -110,9 +110,9 @@ func newRedis(c conf.Redis) *redis.Client {
 		Addr:         c.Addr,
 		Password:     c.Password,
 		DB:           c.DB,
-		DialTimeout:  c.DialTimeout,
-		ReadTimeout:  c.ReadTimeout,
-		WriteTimeout: c.WriteTimeout,
+		DialTimeout:  time.Duration(c.DialTimeout),
+		ReadTimeout:  time.Duration(c.ReadTimeout),
+		WriteTimeout: time.Duration(c.WriteTimeout),
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

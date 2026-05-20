@@ -24,13 +24,22 @@ type UserUsecase struct {
 
 // NewUserUsecase 创建用户用例
 func NewUserUsecase(repo UserRepo, roleRepo RoleRepo, permRepo PermissionRepo, c *conf.Auth, logger log.Logger) *UserUsecase {
-	return &UserUsecase{
+	uc := &UserUsecase{
 		repo:     repo,
 		roleRepo: roleRepo,
 		permRepo: permRepo,
 		conf:     c,
 		log:      log.NewHelper(log.With(logger, "module", "biz/user")),
 	}
+
+	// 自动初始化管理员账号
+	if c.InitAdmin.Username != "" {
+		if err := uc.InitAdmin(context.Background(), c.InitAdmin.Username, c.InitAdmin.Password, c.InitAdmin.Nickname); err != nil {
+			uc.log.Errorf("failed to init admin: %v", err)
+		}
+	}
+
+	return uc
 }
 
 // ==================== 认证 ====================
@@ -59,12 +68,12 @@ func (uc *UserUsecase) Login(ctx context.Context, username, password string) (to
 	}
 
 	// 生成 Token
-	token, err = uc.generateToken(user, uc.conf.TokenExpire)
+	token, err = uc.generateToken(user, time.Duration(uc.conf.TokenExpire))
 	if err != nil {
 		return "", "", nil, err
 	}
 
-	refreshToken, err = uc.generateToken(user, uc.conf.RefreshExpire)
+	refreshToken, err = uc.generateToken(user, time.Duration(uc.conf.RefreshExpire))
 	if err != nil {
 		return "", "", nil, err
 	}
@@ -106,12 +115,12 @@ func (uc *UserUsecase) RefreshToken(ctx context.Context, refreshTokenStr string)
 		return "", "", err
 	}
 
-	token, err := uc.generateToken(user, uc.conf.TokenExpire)
+	token, err := uc.generateToken(user, time.Duration(uc.conf.TokenExpire))
 	if err != nil {
 		return "", "", err
 	}
 
-	newRefresh, err := uc.generateToken(user, uc.conf.RefreshExpire)
+	newRefresh, err := uc.generateToken(user, time.Duration(uc.conf.RefreshExpire))
 	if err != nil {
 		return "", "", err
 	}

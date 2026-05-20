@@ -1,6 +1,8 @@
 package server
 
 import (
+	"time"
+
 	v1 "admin/api/admin/v1"
 	"admin/internal/biz"
 	"admin/internal/conf"
@@ -39,7 +41,7 @@ func NewGRPCServer(
 		opts = append(opts, grpc.Address(c.GRPC.Addr))
 	}
 	if c.GRPC.Timeout > 0 {
-		opts = append(opts, grpc.Timeout(c.GRPC.Timeout))
+		opts = append(opts, grpc.Timeout(time.Duration(c.GRPC.Timeout)))
 	}
 
 	srv := grpc.NewServer(opts...)

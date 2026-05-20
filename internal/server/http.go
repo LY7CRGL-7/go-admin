@@ -1,6 +1,8 @@
 package server
 
 import (
+	"time"
+
 	"admin/internal/conf"
 
 	"github.com/go-kratos/kratos/v2/log"
@@ -22,7 +24,7 @@ func NewHTTPServer(c *conf.Server, logger log.Logger) *http.Server {
 		opts = append(opts, http.Address(c.HTTP.Addr))
 	}
 	if c.HTTP.Timeout > 0 {
-		opts = append(opts, http.Timeout(c.HTTP.Timeout))
+		opts = append(opts, http.Timeout(time.Duration(c.HTTP.Timeout)))
 	}
 
 	srv := http.NewServer(opts...)
