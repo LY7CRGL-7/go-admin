@@ -1,8 +1,35 @@
-# 🚀 企业级 Go 安全管理端后端系统
+# 🚀 企业级 Go 微服务模板
 
-一个基于 Go 和 Gin 框架构建的企业级安全管理端后端系统模板，具备完善的安全机制、权限控制、审计功能和微服务架构支持。
+一个开箱即用的 Go 微服务项目模板，基于纯 gRPC 架构，包含完整的基础设施、安全机制和 CI/CD 配置。
 
-> 📌 **提示**：这是一个可复用的项目模板，你可以基于此快速构建自己的微服务项目。
+> 📌 **这是一个可复用的项目模板**，你可以基于此快速构建自己的微服务项目。
+
+---
+
+## 📋 目录
+
+- [核心特性](#核心特性)
+- [技术栈](#技术栈)
+- [快速开始（5分钟）](#快速开始5分钟)
+- [使用模板构建项目](#使用模板构建项目)
+  - [1. Fork/Clone 模板](#1-forkclone-模板)
+  - [2. 重命名项目](#2-重命名项目)
+  - [3. 配置项目](#3-配置项目)
+  - [4. 启动和运行](#4-启动和运行)
+- [项目结构](#项目结构)
+- [配置文件说明](#配置文件说明)
+- [开发指南](#开发指南)
+  - [添加新的 gRPC 服务](#添加新的-grpc-服务)
+  - [常用命令](#常用命令)
+  - [开发工具安装](#开发工具安装)
+- [Docker 使用](#docker-使用)
+- [CI/CD 配置](#cicd-配置)
+- [监控与可观测性](#监控与可观测性)
+- [安全最佳实践](#安全最佳实践)
+- [常见问题](#常见问题)
+- [扩展阅读](#扩展阅读)
+
+---
 
 ## ✨ 核心特性
 
@@ -14,61 +41,191 @@
 - ✅ **限流保护** - 全局/用户/IP 多维度限流
 - ✅ **审计日志** - 完整的操作日志记录
 - ✅ **IP 白名单** - 可选的 IP 访问控制
-- ✅ **CORS 支持** - 安全的跨域配置
-- ✅ **数据验证** - 严格的输入参数验证
 
 ### 微服务架构
 - ✅ **Wire 依赖注入** - Google 官方依赖注入框架
 - ✅ **Protocol Buffers** - 语言无关的接口定义
 - ✅ **gRPC 服务** - 高性能 RPC 框架
-- ✅ **Kafka 消息队列** - 异步处理能力（审计日志等）
+- ✅ **Kafka 消息队列** - 异步处理能力
 - ✅ **MinIO 对象存储** - 文件存储支持
 - ✅ **Prometheus 监控** - 完整的可观测性
 - ✅ **Docker Compose** - 一键启动基础设施
 - ✅ **GitHub Actions** - CI/CD 自动化
 
-## 📋 目录
-
-- [技术栈](#技术栈)
-- [项目结构](#项目结构)
-- [快速开始](#快速开始)
-- [使用模板](#使用模板)
-- [API 文档](#api-文档)
-- [监控与可观测性](#监控与可观测性)
-- [开发工具](#开发工具)
-- [安全最佳实践](#安全最佳实践)
-- [部署](#部署)
+---
 
 ## 🛠 技术栈
 
-### 核心框架
-- **Go 1.25.0** - 编程语言（最新稳定版）
-- **gRPC** - 高性能 RPC 框架（v1.81.1）
-- **Wire** - 依赖注入框架 (github.com/google/wire)
-- **Protocol Buffers** - 接口定义语言
+| 分类 | 技术 | 版本 |
+|------|------|------|
+| **语言** | Go | 1.25.0+ |
+| **RPC** | gRPC | v1.81.1 |
+| **依赖注入** | Google Wire | v0.6.0 |
+| **接口定义** | Protocol Buffers | v3 |
+| **数据库** | PostgreSQL | 13+ |
+| **缓存** | Redis | 6.0+ |
+| **消息队列** | Kafka | 2.8+ |
+| **对象存储** | MinIO | Latest |
+| **监控** | Prometheus + Grafana | Latest |
+| **日志** | Zap + Lumberjack | Latest |
 
-### 数据存储
-- **PostgreSQL** - 关系型数据库
-- **Redis** - 缓存和限流
-- **MinIO** - 对象存储
+---
 
-### 消息队列
-- **Kafka** - 消息队列（审计日志等异步处理）
+## 🚀 快速开始（5分钟）
 
-### 监控与日志
-- **Prometheus** - 指标采集
-- **Zap** - 结构化日志
-- **Lumberjack** - 日志轮转
+### 环境要求
 
-### 安全
-- **JWT** - Token 认证
-- **bcrypt** - 密码加密
+- **Go 1.25.0+**（支持 toolchain 自动升级）
+- Docker & Docker Compose
+- protoc 编译器（可选，用于生成 proto 代码）
+
+> 💡 **Go Toolchain 自动升级**：  
+> 项目使用 `go 1.25.0` 和 `toolchain go1.25.0` 声明，CI/CD 配置 `GOTOOLCHAIN=auto`，支持自动下载更高版本工具链。
+
+### 一键启动
+
+```bash
+# 1. Clone 项目
+git clone https://github.com/LY7CRGL-7/go-admin.git
+cd go-admin
+
+# 2. 启动基础设施
+docker-compose up -d
+
+# 3. 下载依赖
+make deps
+
+# 4. 生成 proto 代码
+make proto
+
+# 5. 配置项目
+cp cmd/admin/conf/config.yaml.example cmd/admin/conf/config.yaml
+
+# 6. 运行
+make run
+```
+
+就这么简单！🎉
+
+---
+
+## 📝 使用模板构建项目
+
+### 1. Fork/Clone 模板
+
+**推荐方式**：使用 GitHub 的 "Use this template" 按钮  
+访问：https://github.com/LY7CRGL-7/go-admin
+
+**或者手动 Clone**：
+```bash
+git clone https://github.com/YOUR_USERNAME/your-project.git
+cd your-project
+```
+
+### 2. 重命名项目
+
+#### 2.1 修改模块名称
+
+编辑 `go.mod`：
+
+```go
+// 修改前
+module admin
+
+// 修改后
+module github.com/YOUR_USERNAME/your-project
+```
+
+#### 2.2 批量替换 import 路径
+
+**Linux/macOS:**
+```bash
+find . -name "*.go" -type f -exec sed -i 's|"admin/|"github.com/YOUR_USERNAME/your-project/|g' {} +
+```
+
+**Windows PowerShell:**
+```powershell
+Get-ChildItem -Recurse -Filter "*.go" | ForEach-Object {
+    (Get-Content $_.FullName -Raw) -replace '"admin/', '"github.com/YOUR_USERNAME/your-project/' | Set-Content $_.FullName
+}
+```
+
+#### 2.3 更新 Makefile
+
+```makefile
+# 修改这些变量
+BINARY_NAME ?= your-project-name
+MAIN_PATH ?= cmd/your-project/main.go
+```
+
+### 3. 配置项目
+
+#### 3.1 必须修改的配置文件
+
+| 文件 | 修改内容 | 说明 |
+|------|---------|------|
+| `go.mod` | `module` 名称 | 改为您自己的模块路径 |
+| `Makefile` | `BINARY_NAME` | 改为您项目的二进制名称 |
+| `docker-compose.yaml` | 所有 `YOUR_PROJECT` | 替换为您的项目名 |
+| `docker-compose.yaml` | 所有密码 | ⚠️ 使用强密码 |
+| `config.yaml` | 数据库、Redis等 | 根据实际环境配置 |
+
+#### 3.2 复制并编辑配置
+
+```bash
+cp cmd/admin/conf/config.yaml.example cmd/admin/conf/config.yaml
+```
+
+编辑 `config.yaml`：
+
+```yaml
+database:
+  host: localhost
+  port: 5432
+  user: your_user          # ⚠️ 修改
+  password: your_password  # ⚠️ 修改为强密码
+  name: your_database      # ⚠️ 修改
+
+redis:
+  addr: localhost:6379
+  password: your_redis_password  # ⚠️ 修改
+
+jwt:
+  secret: your-jwt-secret-key-change-this  # ⚠️ 修改为强密钥
+```
+
+### 4. 启动和运行
+
+```bash
+# 启动基础设施（PostgreSQL, Redis等）
+docker-compose up -d
+
+# 下载依赖
+make deps
+
+# 生成 proto 代码
+make proto
+
+# 运行项目
+make run
+```
+
+验证服务：
+```bash
+# 使用 grpcurl 测试
+grpcurl -plaintext localhost:9090 list
+
+# 或使用 grpcui（可视化）
+grpcui -plaintext localhost:9090
+```
+
+---
 
 ## 📂 项目结构
 
 ```
-admin/
-├── cmd/admin/
+your-project/
+├── cmd/your-project/
 │   ├── conf/
 │   │   ├── config.yaml          # 配置文件（不提交到 Git）
 │   │   └── config.yaml.example  # 配置模板（提交到 Git）
@@ -76,39 +233,21 @@ admin/
 │   └── wire.go                  # Wire 依赖注入配置
 ├── internal/
 │   ├── conf/                    # 配置结构体
-│   │   └── config.go
-│   ├── data/                    # 数据层
-│   │   ├── model/
-│   │   │   └── model.go        # 数据模型
-│   │   ├── database.go          # 数据库连接
-│   │   └── redis.go            # Redis 连接
+│   ├── data/                    # 数据层（数据库、Redis）
+│   │   ├── model/              # 数据模型
+│   │   ├── database.go
+│   │   └── redis.go
 │   ├── dto/                     # 数据传输对象
-│   │   └── dto.go
 │   ├── grpc/                    # gRPC 服务实现
-│   │   └── auth.go             # 认证服务
-│   ├── handler/                 # HTTP 处理器
-│   │   ├── auth.go             # 认证相关
-│   │   ├── admin.go            # 管理员管理
-│   │   └── common.go           # 通用功能
-│   ├── kafka/                   # Kafka 封装
-│   │   └── kafka.go
+│   ├── handler/                 # HTTP 处理器（如有）
 │   ├── middleware/              # 中间件
 │   │   ├── auth.go             # JWT 认证
 │   │   ├── rbac.go             # RBAC 权限
-│   │   ├── security.go         # 安全中间件
-│   │   ├── audit.go            # 审计日志
-│   │   └── metrics.go          # Prometheus 监控
-│   ├── pkg/
-│   │   └── logger/             # 日志工具
-│   │       └── logger.go
+│   │   └── security.go         # 安全中间件
 │   ├── service/                 # 业务逻辑层
-│   │   └── auth.go
-│   ├── server/                  # 服务器
-│   │   └── http.go
-│   └── storage/                 # 对象存储
-│       └── minio.go
-├── proto/admin/v1/
-│   └── admin.proto              # Protocol Buffers 定义
+│   └── server/                  # 服务器
+├── proto/your-service/v1/
+│   └── service.proto            # Protocol Buffers 定义
 ├── deploy/
 │   ├── k8s.yaml                # Kubernetes 部署配置
 │   └── prometheus.yml          # Prometheus 配置
@@ -121,585 +260,386 @@ admin/
 └── README.md
 ```
 
-## 🚀 快速开始
+---
 
-### 环境要求
+## 📋 配置文件说明
 
-- **Go 1.25.0+**（支持toolchain自动升级）
-- PostgreSQL 13+
-- Redis 6.0+
-- Kafka 2.8+ （可选）
-- MinIO （可选）
-- Docker & Docker Compose （推荐）
-- protoc 编译器 （可选）
+### Makefile
 
-> 💡 **Go Toolchain 自动升级**：
-> - 项目使用 `go 1.25.0` 和 `toolchain go1.25.0` 声明
-> - CI/CD 配置 `GOTOOLCHAIN=auto`，支持自动下载更高版本工具链
-> - 当依赖需要更新版本（如 Go 1.26），CI 不会失败，会自动升级
-> - 本地开发无需手动管理 Go 版本
+```makefile
+# 项目配置（使用者需要修改这些变量）
+BINARY_NAME ?= your-project-name  # 修改为您的项目名称
+MAIN_PATH ?= cmd/admin/main.go    # 主程序入口
+CONFIG_PATH ?= cmd/admin/conf/config.yaml
+VERSION ?= 1.0.0
+```
 
-### 方式一：使用 Docker Compose（推荐）
+**常用命令**：
+```bash
+make help     # 查看所有可用命令
+make build    # 构建项目
+make run      # 运行项目
+make clean    # 清理构建产物
+make test     # 运行测试
+make proto    # 生成 proto 代码
+make wire     # 生成 wire 依赖注入代码
+make docker   # 构建 Docker 镜像
+```
 
-#### 1. 启动基础设施
+### Dockerfile
+
+使用构建参数自定义：
 
 ```bash
-docker-compose up -d
+docker build \
+  --build-arg APP_NAME=your-project \
+  --build-arg APP_VERSION=1.0.0 \
+  -t YOUR_USERNAME/your-project:latest .
 ```
 
-这将启动：
-- PostgreSQL (localhost:5432)
-- Redis (localhost:6379)
-- Kafka (localhost:9092)
-- Zookeeper (localhost:2181)
-- MinIO (localhost:9000, Console: localhost:9001)
-- Prometheus (localhost:9090)
-- Grafana (localhost:3000)
+### docker-compose.yaml
 
-#### 2. 安装依赖
+包含的可选服务：
+
+| 服务 | 必需性 | 端口 | 说明 |
+|------|--------|------|------|
+| PostgreSQL | ⭐ 必需 | 5432 | 主数据库 |
+| Redis | 推荐 | 6379 | 缓存、限流 |
+| Kafka | 可选 | 9092 | 消息队列 |
+| MinIO | 可选 | 9000/9001 | 对象存储 |
+| Prometheus | 可选 | 9090 | 监控指标 |
+| Grafana | 可选 | 3000 | 可视化仪表板 |
+
+**只启动必需服务**：
+```bash
+docker-compose up -d postgres redis
+```
+
+---
+
+## 💻 开发指南
+
+### 添加新的 gRPC 服务
+
+#### 1. 定义 Proto 文件
+
+```protobuf
+// proto/your-service/v1/service.proto
+syntax = "proto3";
+
+package yourservice.v1;
+
+option go_package = "github.com/YOUR_USERNAME/your-project/proto/your-service/v1;yourservicev1";
+
+service YourService {
+  rpc CreateItem(CreateItemRequest) returns (ItemResponse);
+}
+
+message CreateItemRequest {
+  string name = 1;
+}
+
+message ItemResponse {
+  int64 id = 1;
+  string name = 2;
+}
+```
+
+#### 2. 生成代码
 
 ```bash
-make deps
+make proto
+
+# 或手动执行
+protoc --go_out=. --go_opt=paths=source_relative \
+  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+  proto/your-service/v1/service.proto
 ```
 
-#### 3. 配置项目
-
-```bash
-cp cmd/admin/conf/config.yaml.example cmd/admin/conf/config.yaml
-# 编辑配置文件，根据实际情况修改
-```
-
-#### 4. 运行项目
-
-```bash
-make run
-```
-
-### 方式二：手动配置
-
-#### 1. 安装依赖
-
-```bash
-# 安装 Go 依赖
-make deps
-
-# 安装 protoc 编译器（如果需要生成 proto）
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-
-# 安装 Wire 依赖注入工具
-go install github.com/google/wire/cmd/wire@latest
-```
-
-#### 2. 配置数据库
-
-创建 PostgreSQL 数据库：
-
-```sql
-CREATE DATABASE admin_db;
-```
-
-#### 3. 修改配置
-
-编辑 `cmd/admin/conf/config.yaml`：
-
-```yaml
-database:
-  dsn: host=localhost port=5432 user=admin password=admin123 dbname=admin_db sslmode=disable timezone=Asia/Shanghai
-
-redis:
-  addr: localhost:6379
-  password: "your-redis-password"
-
-jwt:
-  secret: your-256-bit-secret-key-change-in-production
-```
-
-#### 4. 运行
-
-```bash
-# 设置环境变量（Windows PowerShell）
-$env:GOTOOLCHAIN="local"
-
-# 开发模式
-make run
-
-# 或直接运行
-go run -mod=mod cmd/admin/main.go -config cmd/admin/conf/config.yaml
-```
-
-> 💡 **提示**：每次编译前都需要设置 `GOTOOLCHAIN=local` 环境变量
-
-#### 5. 构建
-
-```bash
-make build
-```
-
-## 📋 使用模板
-
-如果你想基于此模板创建新项目：
-
-### 1. 克隆模板
-
-```bash
-git clone https://github.com/LY7CRGL-7/go-admin.git my-project
-cd my-project
-```
-
-### 2. 重新初始化 Git
-
-```bash
-# 删除 .git 并重新初始化
-rm -rf .git  # Linux/Mac
-rmdir /s /q .git  # Windows PowerShell
-git init
-```
-
-### 3. 自定义项目
-
-1. **修改模块名**：编辑 `go.mod` 中的模块名
-2. **更新配置**：复制并修改配置文件
-3. **实现业务逻辑**：在 `internal/` 目录下添加你的代码
-4. **更新文档**：修改此 README.md
-
-## 📡 API 文档
-
-### gRPC 服务
-
-本项目采用**纯 gRPC 架构**，所有业务逻辑通过 gRPC 服务暴露。
-
-**gRPC 端口**: 9090
-
-#### 服务列表
-
-1. **AuthService** - 认证服务
-   - `Login` - 登录
-   - `GetProfile` - 获取个人信息
-   - `ChangePassword` - 修改密码
-   - `Logout` - 登出
-
-2. **AdminService** - 管理员服务
-   - `CreateAdmin` - 创建管理员
-   - `GetAdmin` - 获取管理员
-   - `UpdateAdmin` - 更新管理员
-   - `DeleteAdmin` - 删除管理员
-   - `ListAdmins` - 列表查询
-
-3. **RoleService** - 角色服务
-   - `CreateRole` - 创建角色
-   - `GetRole` - 获取角色
-   - `UpdateRole` - 更新角色
-   - `DeleteRole` - 删除角色
-   - `ListRoles` - 列表查询
-   - `AssignPermissions` - 分配权限
-
-4. **PermissionService** - 权限服务
-   - `ListPermissions` - 列表查询
-
-5. **AuditLogService** - 审计日志服务
-   - `ListAuditLogs` - 列表查询
-   - `GetAuditLog` - 获取详情
-
-#### 使用示例
+#### 3. 实现服务
 
 ```go
-// 连接 gRPC 服务
-conn, err := grpc.Dial("localhost:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
-if err != nil {
-    log.Fatal(err)
+// internal/grpc/your-service.go
+package grpc
+
+import (
+    "context"
+    pb "github.com/YOUR_USERNAME/your-project/proto/your-service/v1"
+)
+
+type YourService struct {
+    pb.UnimplementedYourServiceServer
 }
-defer conn.Close()
 
-// 创建认证客户端
-authClient := pb.NewAuthServiceClient(conn)
-
-// 调用登录接口
-resp, err := authClient.Login(context.Background(), &pb.LoginRequest{
-    Username: "admin",
-    Password: "Admin@123456",
-})
-```
-
-### HTTP API（已废弃）
-
-> ⚠️ **注意**：本项目已迁移到纯 gRPC 架构，HTTP API 已废弃。
-> 
-> 以下为历史参考文档，请使用 gRPC 客户端调用服务。
-
-<details>
-<summary>点击查看历史 HTTP API 文档</summary>
-
-#### 1. 管理员登录
-
-```http
-POST /api/v1/auth/login
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": "Admin@123456"
+func (s *YourService) CreateItem(ctx context.Context, req *pb.CreateItemRequest) (*pb.ItemResponse, error) {
+    // 实现业务逻辑
+    return &pb.ItemResponse{
+        Id:   1,
+        Name: req.Name,
+    }, nil
 }
 ```
 
-响应：
+#### 4. 注册服务
 
-```json
-{
-  "code": 0,
-  "msg": "登录成功",
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "admin": {
-      "id": 1,
-      "username": "admin",
-      "nickname": "系统管理员",
-      "email": "",
-      "phone": "",
-      "status": 1
-    }
-  }
-}
+在 `internal/server/grpc.go` 中注册您的服务。
+
+### 开发工具安装
+
+```bash
+# 1. protoc 编译器
+# macOS
+brew install protobuf
+
+# Linux
+wget https://github.com/protocolbuffers/protobuf/releases/download/v29.3/protoc-29.3-linux-x86_64.zip
+sudo unzip protoc.zip -d /usr/local/
+
+# 2. Go protobuf 插件
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# 3. Wire 依赖注入
+go install github.com/google/wire/cmd/wire@latest
+
+# 4. gRPC 调试工具
+go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
+go install github.com/fullstorydev/grpcui/cmd/grpcui@latest
 ```
 
-#### 2. 获取当前管理员信息
+---
 
-```http
-GET /api/v1/auth/profile
-Authorization: Bearer {token}
+## 🐳 Docker 使用
+
+### 构建镜像
+
+```bash
+# 方式1：使用 Makefile
+make docker
+
+# 方式2：直接使用 docker 命令
+docker build -t YOUR_USERNAME/your-project:latest .
+
+# 方式3：使用构建参数
+docker build \
+  --build-arg APP_NAME=your-project \
+  --build-arg APP_VERSION=1.0.0 \
+  -t YOUR_USERNAME/your-project:1.0.0 .
 ```
 
-#### 3. 修改密码
+### 运行容器
 
-```http
-POST /api/v1/auth/change-password
-Authorization: Bearer {token}
-Content-Type: application/json
+```bash
+# 确保基础设施已启动
+docker-compose up -d postgres redis
 
-{
-  "old_password": "OldPass@123",
-  "new_password": "NewPass@456"
-}
+# 运行您的服务
+docker run -d \
+  --name your-project \
+  --network your-project-network \
+  -p 9090:9090 \
+  -v $(pwd)/config.yaml:/root/config.yaml \
+  YOUR_USERNAME/your-project:latest
 ```
 
-#### 4. 登出
+### 多阶段构建说明
 
-```http
-POST /api/v1/auth/logout
-Authorization: Bearer {token}
+Dockerfile 使用多阶段构建：
+- **Builder 阶段**：编译 Go 代码
+- **Runner 阶段**：只包含二进制文件和运行时依赖
+
+最终镜像约 20MB，保持最小化。
+
+---
+
+## 🔄 CI/CD 配置
+
+### GitHub Actions 质量检查
+
+模板包含的 CI 用于**验证模板质量**，不是必须的构建流程：
+
+- ✅ 编译验证
+- ✅ Proto 代码生成
+- ✅ Docker 构建验证
+- 📝 代码测试（可选，失败不阻断）
+- 📝 格式检查（可选，失败不阻断）
+
+### 自定义 CI
+
+编辑 `.github/workflows/ci.yml` 添加您的检查：
+
+```yaml
+jobs:
+  quality-check:
+    steps:
+      # ... 现有步骤 ...
+      
+      # 添加您的自定义检查
+      - name: Custom Check
+        run: |
+          echo "Running custom checks..."
 ```
 
-### 管理员管理
+### 添加 Docker Hub 推送
 
-#### 1. 获取管理员列表
+1. 在 GitHub 仓库 → Settings → Secrets 添加：
+   - `DOCKERHUB_USERNAME`
+   - `DOCKERHUB_TOKEN`
 
-```http
-GET /api/v1/admins?page=1&page_size=20
-Authorization: Bearer {token}
+2. 修改 CI 中的 Docker job：
+
+```yaml
+- name: Login to Docker Hub
+  uses: docker/login-action@v3
+  with:
+    username: ${{ secrets.DOCKERHUB_USERNAME }}
+    password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+- name: Build and push
+  uses: docker/build-push-action@v5
+  with:
+    context: .
+    push: true
+    tags: |
+      YOUR_USERNAME/your-project:latest
+      YOUR_USERNAME/your-project:${{ github.sha }}
 ```
 
-#### 2. 创建管理员
-
-```http
-POST /api/v1/admins
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "username": "newadmin",
-  "password": "Secure@123",
-  "nickname": "新管理员",
-  "email": "admin@example.com",
-  "role_ids": [1, 2]
-}
-```
-
-#### 3. 更新管理员
-
-```http
-PUT /api/v1/admins/1
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "nickname": "更新昵称",
-  "status": 1
-}
-```
-
-#### 4. 删除管理员
-
-```http
-DELETE /api/v1/admins/1
-Authorization: Bearer {token}
-```
-
-### 角色管理
-
-#### 1. 获取角色列表
-
-```http
-GET /api/v1/roles
-Authorization: Bearer {token}
-```
-
-#### 2. 创建角色
-
-```http
-POST /api/v1/roles
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "name": "内容管理员",
-  "code": "content_admin",
-  "description": "负责内容管理"
-}
-```
-
-#### 3. 分配权限
-
-```http
-POST /api/v1/roles/1/permissions
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "permission_ids": [1, 2, 3, 4]
-}
-```
-
-### 权限管理
-
-#### 获取权限列表
-
-```http
-GET /api/v1/permissions
-Authorization: Bearer {token}
-```
-
-### 审计日志
-
-#### 获取审计日志
-
-```http
-GET /api/v1/audit-logs?page=1&page_size=20
-Authorization: Bearer {token}
-```
-
-</details>
+---
 
 ## 📊 监控与可观测性
 
 ### Prometheus 指标
 
-系统暴露以下 Prometheus 指标：
+模板已集成 Prometheus，暴露以下指标：
 
-- `admin_http_requests_total` - HTTP 请求总数
-- `admin_http_request_duration_seconds` - HTTP 请求持续时间
-- `admin_active_connections` - 活跃连接数
+- HTTP/gRPC 请求计数
+- 请求延迟
+- 错误率
+- Goroutine 数量
 
-访问指标：`http://localhost:8080/metrics`
+### 访问 Grafana
 
-### Grafana 仪表板
+1. 访问 `http://localhost:3000`
+2. 使用配置的用户名密码登录
+3. 添加 Prometheus 数据源：`http://prometheus:9090`
+4. 导入 Go 应用监控仪表板
 
-1. 访问 Grafana：`http://localhost:3000`（用户名/密码：admin/admin）
-2. 添加 Prometheus 数据源：`http://prometheus:9090`
-3. 导入仪表板或创建自定义图表
+---
 
-### 其他监控服务
+## 🔒 安全最佳实践
 
-- **Prometheus**: http://localhost:9090
-- **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
+### 1. 密码管理
 
-## 🔧 开发工具
+- ⚠️ **永远不要**将密码提交到 Git
+- 使用 `.gitignore` 排除 `config.yaml`
+- 只提交 `config.yaml.example` 模板
+- 使用环境变量或密钥管理服务
 
-### Makefile 命令
-
-```bash
-# 安装依赖
-make deps
-
-# 运行项目
-make run
-
-# 构建项目
-make build
-
-# 构建 Docker 镜像
-make docker
-
-# 生成 Proto 代码
-make proto
-
-# 生成 Wire 依赖注入代码
-make wire
-
-# 格式化代码
-make fmt
-
-# 代码检查
-make lint
-
-# 运行测试
-make test
-
-# 清理构建
-make clean
-```
-
-### 代码生成
-
-```bash
-# 生成 Proto 代码
-make proto
-
-# 生成 Wire 依赖注入代码
-make wire
-
-# 格式化代码
-make fmt
-
-# 代码检查
-make lint
-```
-
-### 快速参考
-
-- **Proto 定义**：`proto/admin/v1/admin.proto`
-- **Wire 配置**：`cmd/admin/wire.go`
-- **Docker Compose**：`docker-compose.yaml`
-- **Prometheus 配置**：`deploy/prometheus.yml`
-- **CI/CD 配置**：`.github/workflows/ci.yml`
-
-## 🔐 安全最佳实践
-
-### 1. 生产环境配置
+### 2. JWT 密钥
 
 ```yaml
-server:
-  mode: release  # 必须设置为 release
-
+# config.yaml
 jwt:
-  secret: # 使用强随机密钥，至少 32 位
-  expire: 2h  # 缩短 Token 过期时间
-
-security:
-  password:
-    min_length: 12  # 增加最小密码长度
-  
-  login:
-    max_attempts: 3  # 减少允许尝试次数
-    lockout_duration: 1h  # 增加锁定时间
-  
-  ip_whitelist:  # 启用 IP 白名单
-    - 10.0.0.1
-    - 10.0.0.2
+  secret: ${JWT_SECRET}  # 从环境变量读取
 ```
-
-### 2. 数据库安全
-
-- 使用强密码
-- 限制数据库访问 IP
-- 启用 SSL 连接
-- 定期备份数据
-
-### 3. Redis 安全
-
-- 设置访问密码
-- 限制访问 IP
-- 禁用危险命令（FLUSHALL, CONFIG 等）
-
-### 4. 网络安全
-
-- 使用 HTTPS/TLS
-- 配置防火墙规则
-- 使用反向代理（Nginx）
-- 启用 IP 白名单
-
-### 5. 日志安全
-
-- 定期审查审计日志
-- 保护日志文件访问权限
-- 日志文件加密存储
-- 设置合理的日志保留时间
-
-### 6. 密码管理
-
-- 定期更换管理员密码
-- 不使用默认密码
-- 启用双因素认证（可选）
-- 密码历史检查
-
-## 🚢 部署
-
-### Docker 部署
 
 ```bash
-# 构建镜像
-make docker
-
-# 运行容器
-docker run -d \
-  -p 8080:8080 \
-  -v /path/to/config.yaml:/root/config.yaml \
-  -v /path/to/logs:/opt/apps/admin/logs \
-  --name admin-service \
-  admin:latest
+# 生成强密钥
+openssl rand -base64 32
 ```
 
-### Kubernetes 部署
+### 3. 生产环境配置
 
 ```bash
-kubectl apply -f deploy/k8s.yaml
+# 使用环境变量覆盖
+export DB_PASSWORD=production_password
+export JWT_SECRET=production_jwt_secret
+
+# 或使用 .env 文件（不提交到 Git）
+cat .env
+DB_PASSWORD=production_password
+JWT_SECRET=production_jwt_secret
 ```
 
-### Nginx 反向代理配置
+---
 
-```nginx
-server {
-    listen 443 ssl;
-    server_name admin.example.com;
+## ❓ 常见问题
 
-    ssl_certificate /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
+### Q: 如何只启动必需的服务？
 
-    location / {
-        proxy_pass http://localhost:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
+```bash
+# 只启动 PostgreSQL 和 Redis
+docker-compose up -d postgres redis
+
+# 或注释掉 docker-compose.yaml 中不需要的服务
 ```
 
-## 📝 初始化管理员
+### Q: Proto 代码生成失败？
 
-系统首次启动时会自动创建初始管理员账号：
+```bash
+# 确保已安装必要工具
+protoc --version
+which protoc-gen-go
+which protoc-gen-go-grpc
 
-- 用户名: `admin`
-- 密码: `Admin@123456`（请在配置文件中修改）
+# 重新安装
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+```
 
-**⚠️ 重要：首次登录后请立即修改密码！**
+### Q: 数据库连接失败？
 
-## 🔒 安全提示
+```bash
+# 检查 PostgreSQL 是否运行
+docker-compose ps postgres
 
-1. 修改所有默认密码
-2. 不要提交配置文件（使用 `.example` 模板）
-3. 使用强 JWT 密钥
-4. 启用 HTTPS
-5. 定期更新依赖
+# 查看日志
+docker-compose logs postgres
+
+# 测试连接
+psql -h localhost -U your_user -d your_database
+```
+
+### Q: 如何升级到新的 Go 版本？
+
+```bash
+# 1. 更新 go.mod
+go mod edit -go=1.26
+
+# 2. 更新 Dockerfile
+# FROM golang:1.26-alpine AS builder
+
+# 3. 更新 .github/workflows/ci.yml
+# GO_VERSION: '1.26'
+```
+
+---
+
+## 📚 扩展阅读
+
+- [Go 官方文档](https://golang.org/doc/)
+- [gRPC 官方文档](https://grpc.io/docs/)
+- [Protocol Buffers 文档](https://developers.google.com/protocol-buffers)
+- [Google Wire 文档](https://github.com/google/wire)
+- [Docker 最佳实践](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
+
+---
+
+## 🤝 贡献
+
+如果您在使用模板过程中发现问题或有改进建议，欢迎提交 Issue 或 Pull Request。
+
+---
 
 ## 📄 许可证
 
 MIT License
-
-## 📧 联系方式
-
-如有问题，请联系开发团队或提交 Issue。
 
 ---
 
 **作者**: LY7CRGL-7  
 **版本**: v1.0.0  
 **仓库**: https://github.com/LY7CRGL-7/go-admin
+
+**祝您开发愉快！** 🎉

@@ -1,38 +1,51 @@
+# ========================================
+# 模板项目 Docker Compose 配置
+# 此文件包含所有可选的基础设施服务
+# 使用者可以根据需要启用/禁用服务
+# ========================================
+
 version: '3.8'
 
 services:
-  # PostgreSQL 数据库
+  # ========================================
+  # PostgreSQL 数据库（必需）
+  # ========================================
   postgres:
     image: postgres:15-alpine
-    container_name: admin-postgres
+    container_name: YOUR_PROJECT-postgres  # 修改为您的项目名
     environment:
-      POSTGRES_DB: admin_db
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: your_database           # 修改为您的数据库名
+      POSTGRES_USER: your_user             # 修改为您的数据库用户
+      POSTGRES_PASSWORD: your_password     # ⚠️ 修改为强密码
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docs/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docs/init.sql:/docker-entrypoint-initdb.d/init.sql  # 初始化脚本
     networks:
-      - admin-network
+      - your-project-network               # 修改为您的网络名
 
-  # Redis 缓存
+  # ========================================
+  # Redis 缓存（可选，用于限流、会话等）
+  # ========================================
   redis:
     image: redis:7-alpine
-    container_name: admin-redis
-    command: redis-server --requirepass redis123
+    container_name: YOUR_PROJECT-redis     # 修改为您的项目名
+    command: redis-server --requirepass your_redis_password  # ⚠️ 修改为强密码
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - admin-network
+      - your-project-network
 
-  # Kafka 消息队列
+  # ========================================
+  # Kafka 消息队列（可选，用于异步处理）
+  # 如果不需要可以删除此服务和 zookeeper
+  # ========================================
   kafka:
     image: confluentinc/cp-kafka:7.5.0
-    container_name: admin-kafka
+    container_name: YOUR_PROJECT-kafka
     depends_on:
       - zookeeper
     ports:
@@ -44,61 +57,73 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     networks:
-      - admin-network
+      - your-project-network
 
   # Zookeeper (Kafka 依赖)
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
-    container_name: admin-zookeeper
+    container_name: YOUR_PROJECT-zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     networks:
-      - admin-network
+      - your-project-network
 
-  # MinIO 对象存储
+  # ========================================
+  # MinIO 对象存储（可选，用于文件存储）
+  # 如果不需要可以删除此服务
+  # ========================================
   minio:
     image: minio/minio:latest
-    container_name: admin-minio
+    container_name: YOUR_PROJECT-minio
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9000:9000"   # API 端口
+      - "9001:9001"   # Console 端口
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: your_minio_user      # 修改为您的用户名
+      MINIO_ROOT_PASSWORD: your_minio_pass  # ⚠️ 修改为强密码
     volumes:
       - minio_data:/data
     networks:
-      - admin-network
+      - your-project-network
 
-  # Prometheus 监控
+  # ========================================
+  # Prometheus 监控（可选）
+  # 如果不需要可以删除此服务
+  # ========================================
   prometheus:
     image: prom/prometheus:latest
-    container_name: admin-prometheus
+    container_name: YOUR_PROJECT-prometheus
     ports:
       - "9090:9090"
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     networks:
-      - admin-network
+      - your-project-network
 
-  # Grafana 可视化
+  # ========================================
+  # Grafana 可视化（可选，依赖 Prometheus）
+  # 如果不需要可以删除此服务
+  # ========================================
   grafana:
     image: grafana/grafana:latest
-    container_name: admin-grafana
+    container_name: YOUR_PROJECT-grafana
     ports:
       - "3000:3000"
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_PASSWORD: your_grafana_password  # ⚠️ 修改为强密码
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
     networks:
-      - admin-network
+      - your-project-network
 
+# ========================================
+# 数据卷配置
+# ========================================
 volumes:
   postgres_data:
   redis_data:
@@ -106,6 +131,9 @@ volumes:
   prometheus_data:
   grafana_data:
 
+# ========================================
+# 网络配置
+# ========================================
 networks:
-  admin-network:
+  your-project-network:    # 修改为您的网络名
     driver: bridge
