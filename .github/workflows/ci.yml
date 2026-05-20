@@ -49,10 +49,11 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
+        check-latest: true
     
-    - name: Disable Go toolchain auto-upgrade
+    - name: Enable Go toolchain auto-upgrade
       run: |
-        echo "GOTOOLCHAIN=local" >> $GITHUB_ENV
+        echo "GOTOOLCHAIN=auto" >> $GITHUB_ENV
         echo "GOFLAGS=-mod=mod" >> $GITHUB_ENV
     
     - name: Download dependencies
@@ -102,10 +103,11 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
+        check-latest: true
     
-    - name: Disable Go toolchain auto-upgrade
+    - name: Enable Go toolchain auto-upgrade
       run: |
-        echo "GOTOOLCHAIN=local" >> $GITHUB_ENV
+        echo "GOTOOLCHAIN=auto" >> $GITHUB_ENV
         echo "GOFLAGS=-mod=mod" >> $GITHUB_ENV
     
     - name: Download dependencies

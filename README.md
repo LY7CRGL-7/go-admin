@@ -125,13 +125,19 @@ admin/
 
 ### 环境要求
 
-- **Go 1.25.0**（最新稳定版）
+- **Go 1.25.0+**（支持toolchain自动升级）
 - PostgreSQL 13+
 - Redis 6.0+
 - Kafka 2.8+ （可选）
 - MinIO （可选）
 - Docker & Docker Compose （推荐）
 - protoc 编译器 （可选）
+
+> 💡 **Go Toolchain 自动升级**：
+> - 项目使用 `go 1.25.0` 和 `toolchain go1.25.0` 声明
+> - CI/CD 配置 `GOTOOLCHAIN=auto`，支持自动下载更高版本工具链
+> - 当依赖需要更新版本（如 Go 1.26），CI 不会失败，会自动升级
+> - 本地开发无需手动管理 Go 版本
 
 ### 方式一：使用 Docker Compose（推荐）
 
