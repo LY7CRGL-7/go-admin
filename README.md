@@ -42,9 +42,8 @@
 ## 🛠 技术栈
 
 ### 核心框架
-- **Go 1.23+** - 编程语言
-- **Gin** - HTTP Web 框架
-- **gRPC** - RPC 框架
+- **Go 1.24.7** - 编程语言（稳定版本）
+- **gRPC** - 高性能 RPC 框架（v1.81.1）
 - **Wire** - 依赖注入框架 (github.com/google/wire)
 - **Protocol Buffers** - 接口定义语言
 
@@ -126,13 +125,18 @@ admin/
 
 ### 环境要求
 
-- Go 1.23+
+- **Go 1.24.7**（必须使用此版本，不支持其他版本）
 - PostgreSQL 13+
 - Redis 6.0+
 - Kafka 2.8+ （可选）
 - MinIO （可选）
 - Docker & Docker Compose （推荐）
 - protoc 编译器 （可选）
+
+> ⚠️ **重要提示**：
+> - 项目使用 `module admin` 作为模块名
+> - 本地开发时**必须**设置环境变量 `GOTOOLCHAIN=local`，防止 Go 工具链自动修改 `go.mod`
+> - **不要运行** `go mod tidy`，它会重置 Go 版本为本地版本
 
 ### 方式一：使用 Docker Compose（推荐）
 
@@ -212,12 +216,17 @@ jwt:
 #### 4. 运行
 
 ```bash
+# 设置环境变量（Windows PowerShell）
+$env:GOTOOLCHAIN="local"
+
 # 开发模式
 make run
 
-# 或
-go run cmd/admin/main.go -config cmd/admin/conf/config.yaml
+# 或直接运行
+go run -mod=mod cmd/admin/main.go -config cmd/admin/conf/config.yaml
 ```
+
+> 💡 **提示**：每次编译前都需要设置 `GOTOOLCHAIN=local` 环境变量
 
 #### 5. 构建
 
@@ -254,17 +263,11 @@ git init
 
 ## 📡 API 文档
 
-### HTTP API
-
-#### 基础信息
-
-- 基础路径: `/api/v1`
-- 认证方式: Bearer Token
-- 数据格式: JSON
-
 ### gRPC 服务
 
-项目提供完整的 gRPC 服务支持，端口：9090
+本项目采用**纯 gRPC 架构**，所有业务逻辑通过 gRPC 服务暴露。
+
+**gRPC 端口**: 9090
 
 #### 服务列表
 
@@ -316,7 +319,14 @@ resp, err := authClient.Login(context.Background(), &pb.LoginRequest{
 })
 ```
 
-### HTTP API 详细文档
+### HTTP API（已废弃）
+
+> ⚠️ **注意**：本项目已迁移到纯 gRPC 架构，HTTP API 已废弃。
+> 
+> 以下为历史参考文档，请使用 gRPC 客户端调用服务。
+
+<details>
+<summary>点击查看历史 HTTP API 文档</summary>
 
 #### 1. 管理员登录
 
@@ -474,6 +484,8 @@ Authorization: Bearer {token}
 GET /api/v1/audit-logs?page=1&page_size=20
 Authorization: Bearer {token}
 ```
+
+</details>
 
 ## 📊 监控与可观测性
 
