@@ -15,12 +15,12 @@ vendor/
 *.test
 *.out
 
-# Proto 生成文件（不提交，由 CI 或本地生成）
-**/*.pb.go
-**/*.pb.gw.go
+# Proto 生成文件（模板项目需要提交，确保 clone 后直接能编译）
+# **/*.pb.go
+# **/*.pb.gw.go
 
-# Wire 生成文件（不提交，由本地生成）
-**/wire_gen.go
+# Wire 生成文件（模板项目需要提交，确保依赖注入可用）
+# **/wire_gen.go
 
 # 配置文件（包含敏感信息，只提交 .example 模板）
 config.yaml
