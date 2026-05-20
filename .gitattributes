@@ -1,0 +1,6 @@
+# 防止Go工具修改go.mod
+go.mod -text
+
+# 使用LF换行符，防止Windows CRLF转换
+*.mod -text
+*.sum -text
