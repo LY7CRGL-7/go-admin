@@ -42,7 +42,7 @@
 ## 🛠 技术栈
 
 ### 核心框架
-- **Go 1.24.7** - 编程语言（稳定版本）
+- **Go 1.25.0** - 编程语言（最新稳定版）
 - **gRPC** - 高性能 RPC 框架（v1.81.1）
 - **Wire** - 依赖注入框架 (github.com/google/wire)
 - **Protocol Buffers** - 接口定义语言
@@ -125,18 +125,13 @@ admin/
 
 ### 环境要求
 
-- **Go 1.24.7**（必须使用此版本，不支持其他版本）
+- **Go 1.25.0**（最新稳定版）
 - PostgreSQL 13+
 - Redis 6.0+
 - Kafka 2.8+ （可选）
 - MinIO （可选）
 - Docker & Docker Compose （推荐）
 - protoc 编译器 （可选）
-
-> ⚠️ **重要提示**：
-> - 项目使用 `module admin` 作为模块名
-> - 本地开发时**必须**设置环境变量 `GOTOOLCHAIN=local`，防止 Go 工具链自动修改 `go.mod`
-> - **不要运行** `go mod tidy`，它会重置 Go 版本为本地版本
 
 ### 方式一：使用 Docker Compose（推荐）
 
